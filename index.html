@@ -213,6 +213,79 @@
             pointer-events: auto;
         }
 
+        /* Navigation Arrows (Desktop Only) */
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1002;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Position them explicitly at screen edges */
+        .prev-btn {
+            left: 20px;
+        }
+
+        .next-btn {
+            right: 20px;
+        }
+
+        /* Mobile Optimization: Hide buttons, use Swipe/Tap */
+        @media (max-width: 768px) {
+            .nav-btn {
+                display: none;
+            }
+
+            /* Maximize image on mobile */
+            .lightbox-img {
+                max-width: 100%;
+                max-height: 85vh;
+                /* Leave room for download button at bottom */
+                width: 100%;
+                /* Force width to fill if aspect ratio allows */
+                object-fit: contain;
+            }
+        }
+
+        .download-btn {
+            position: absolute;
+            bottom: 30px;
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 1002;
+            backdrop-filter: blur(5px);
+            letter-spacing: 1px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .download-btn:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+
         .lightbox-img {
             max-width: 90%;
             max-height: 90vh;
@@ -243,23 +316,7 @@
             opacity: 1;
         }
 
-        .download-btn {
-            position: absolute;
-            bottom: 30px;
-            background-color: var(--accent-color);
-            color: white;
-            padding: 10px 24px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 600;
-            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-            transition: background 0.2s, transform 0.2s;
-        }
 
-        .download-btn:hover {
-            background-color: #2563eb;
-            transform: translateY(-2px);
-        }
 
         /* Status Bar */
         .status-bar {
@@ -343,8 +400,8 @@
     </div>
 
     <!-- Lightbox -->
-    <div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
-        <span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+    <div id="lightbox" class="lightbox" onclick="handleLightboxClick(event)">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
 
         <button class="nav-btn prev-btn" onclick="inputNav(-1)">&#10094;</button>
         <button class="nav-btn next-btn" onclick="inputNav(1)">&#10095;</button>
@@ -439,6 +496,44 @@
 
         // --- Lightbox Functions ---
 
+        // --- Navigation Logic (Tap / Swipe / Keyboard) ---
+
+        function handleLightboxClick(e) {
+            // Check if clicked element is the close button or download button
+            if (e.target.classList.contains('lightbox-close') || e.target.closest('#download-btn') || e.target.closest('.nav-btn')) {
+                // Let the default handlers (or onclicks defined in HTML) work
+                if (e.target.classList.contains('lightbox-close')) closeLightbox();
+                return;
+            }
+
+            // IG-style Navigation Logic (Tap Zones)
+            const width = window.innerWidth;
+            const x = e.clientX;
+
+            // Define sensitive zones (e.g., left 30%, right 30%)
+            const tapThreshold = 0.3;
+
+            if (x < width * tapThreshold) {
+                // Left Zone -> Prev
+                inputNav(-1);
+            } else if (x > width * (1 - tapThreshold)) {
+                // Right Zone -> Next
+                inputNav(1);
+            } else {
+                // Center Zone -> Close Lightbox (or toggle controls, but simple close is better here)
+                // Only close if we clicked the background overlay, not the image itself?
+                // Actually, IG stories pauses on hold. Here, let's close if clicked on background.
+                // If clicked on image center, maybe do nothing or close? 
+                // Let's stick to: Click background = Close. Click Image Center = Nothing (to avoid accidental close)
+
+                if (e.target.id === 'lightbox') {
+                    closeLightbox();
+                }
+            }
+        }
+
+
+
         function openLightboxIndex(index) {
             if (index < 0 || index >= allPhotos.length) return;
             currentPhotoIndex = index;
@@ -456,24 +551,21 @@
             const fileName = allPhotos[currentPhotoIndex];
             const src = IMAGE_BASE_URL + fileName;
 
-            // Fade out slightly before switch could be added here for smoothness
             img.src = src;
             btn.href = src;
         }
 
         function inputNav(direction) {
-            // direction: -1 (prev), 1 (next)
             const newIndex = currentPhotoIndex + direction;
             if (newIndex >= 0 && newIndex < allPhotos.length) {
                 currentPhotoIndex = newIndex;
                 showLightboxImage();
+
+                // Add a small visual feedback/animation could go here
             }
         }
 
-        function closeLightbox(e) {
-            // Close if clicked background, close btn, or download btn (optional, usually keep open)
-            if (e && e.target.id !== 'lightbox' && !e.target.classList.contains('lightbox-close')) return;
-
+        function closeLightbox() {
             const lightbox = document.getElementById('lightbox');
             lightbox.classList.remove('active');
             isLightboxOpen = false;
@@ -483,7 +575,7 @@
         // Keyboard Navigation
         document.addEventListener('keydown', (e) => {
             if (!isLightboxOpen) return;
-            if (e.key === 'Escape') closeLightbox({ target: { id: 'lightbox' } });
+            if (e.key === 'Escape') closeLightbox();
             if (e.key === 'ArrowLeft') inputNav(-1);
             if (e.key === 'ArrowRight') inputNav(1);
         });
@@ -491,9 +583,6 @@
         // --- Touch Swipe Navigation ---
         let touchStartX = 0;
         let touchEndX = 0;
-        const lightboxImg = document.getElementById('lightbox-img');
-
-        // Capture touch start on the image or the whole overlay
         const lightboxOverlay = document.getElementById('lightbox');
 
         lightboxOverlay.addEventListener('touchstart', e => {
@@ -502,7 +591,6 @@
 
         lightboxOverlay.addEventListener('touchend', e => {
             touchEndX = e.changedTouches[0].screenX;
-            // Re-implement simplified logic here because function scope issues might occur
             if (touchStartX - touchEndX > 50) inputNav(1); // Left Swipe (Next)
             if (touchEndX - touchStartX > 50) inputNav(-1); // Right Swipe (Prev)
         }, { passive: true });
