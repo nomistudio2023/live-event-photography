@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Event Gallery | 活動即時相簿</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #3b82f6;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        /* Banner */
+        .hero {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center/cover;
+            height: 40vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .hero-content h1 {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            color: #ddd;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* Featured (Newest) Photo */
+        .section-title {
+            border-left: 4px solid var(--accent-color);
+            padding-left: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .featured-container {
+            margin-bottom: 4rem;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .featured-photo {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            max-height: 70vh;
+            object-fit: contain;
+            background-color: var(--card-bg);
+        }
+
+        /* Grid */
+        .gallery-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 4rem;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: var(--card-bg);
+            aspect-ratio: 3/2;
+            transition: transform 0.2s;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .no-photos {
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Loading & Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            z-index: 100;
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="hero">
+        <div class="hero-content">
+            <h1>Live Event 2026</h1>
+            <p>即時活動花絮・精彩瞬間</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Newest Photo Section -->
+        <section id="featured-section" style="display: none;">
+            <h2 class="section-title">最新上傳 (Latest)</h2>
+            <div class="featured-container">
+                <img id="featured-img" class="featured-photo" src="" alt="Latest Upload">
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section>
+            <h2 class="section-title">活動相簿 (Gallery)</h2>
+            <div id="gallery" class="gallery-grid">
+                <!-- Javascript will inject photos here -->
+                <div class="no-photos">等待照片上傳中...</div>
+            </div>
+        </section>
+    </div>
+
+    <div class="status-bar">
+        <span class="live-indicator"></span> 即時連線中... (<span id="photo-count">0</span> 張)
+    </div>
+
+    <script>
+        const MANIFEST_URL = 'photos_web/manifest.json';
+        const IMAGE_BASE_URL = 'photos_web/';
+        
+        let currentPhotos = [];
+        // Track the filename of the currently displayed 'featured' photo to avoid reloading it unnecessarily
+        let currentFeatured = '';
+
+        async function fetchPhotos() {
+            try {
+                // Add timestamp to prevent caching the manifest file
+                const response = await fetch(`${MANIFEST_URL}?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error('Manifest not found');
+                
+                const newPhotos = await response.json();
+                
+                // If the photo list has changed (simple check based on length or first item)
+                // For a robust check we might compare specific contents, but checking valid changes is key.
+                const hasChanged = JSON.stringify(newPhotos) !== JSON.stringify(currentPhotos);
+
+                if (hasChanged && newPhotos.length > 0) {
+                    updateGallery(newPhotos);
+                    currentPhotos = newPhotos;
+                }
+                
+                // Update text count
+                document.getElementById('photo-count').textContent = newPhotos.length;
+
+            } catch (error) {
+                console.log('Waiting for photos...', error);
+            }
+        }
+
+        function updateGallery(photos) {
+            const gallery = document.getElementById('gallery');
+            const featuredSection = document.getElementById('featured-section');
+            const featuredImg = document.getElementById('featured-img');
+
+            if (photos.length === 0) {
+                return;
+            }
+
+            // 1. Handle Featured Photo (The first one in the list)
+            const newestPhoto = photos[0];
+            if (newestPhoto !== currentFeatured) {
+                featuredSection.style.display = 'block';
+                // Preload image before showing to avoid flicker
+                const img = new Image();
+                img.onload = () => {
+                    featuredImg.src = img.src;
+                    // Add a flash effect or animation here if desired
+                };
+                img.src = IMAGE_BASE_URL + newestPhoto;
+                currentFeatured = newestPhoto;
+            }
+
+            // 2. Handle Grid (All photos, or maybe exclude the first one? Let's show all for now)
+            // Re-building the grid. In a heavy app we would use Virtual DOM or smart diffing.
+            // For ~1000 photos this simple innerHTML replacement might get slow, but fine for demo.
+            // Optimization: Only prepend new items in a real app.
+            
+            // Checking if we actually need to redraw everything
+            // A simple strategy: clear and rebuild is safest for order.
+            
+            const gridContent = photos.map((photo, index) => {
+                // Optional: Skip the first one in grid if it is already featured
+                // if (index === 0) return ''; 
+                
+                return `
+                    <div class="gallery-item" style="animation-delay: ${index * 0.05}s">
+                        <img src="${IMAGE_BASE_URL}${photo}" loading="lazy" alt="Event Photo">
+                    </div>
+                `;
+            }).join('');
+
+            gallery.innerHTML = gridContent;
+        }
+
+        // Poll every 3 seconds
+        setInterval(fetchPhotos, 3000);
+        
+        // Initial load
+        fetchPhotos();
+    </script>
+</body>
+</html>
