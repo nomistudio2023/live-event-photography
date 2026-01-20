@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Event Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            900: '#121212',
+                            800: '#1e1e1e',
+                            700: '#2d2d2d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1e1e1e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a4a4a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .glass-panel {
+            background: rgba(30, 30, 30, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 text-white h-screen overflow-hidden flex flex-col font-sans">
+
+    <!-- Header -->
+    <header
+        class="h-16 border-b border-gray-700 flex items-center justify-between px-6 bg-gray-800 shrink-0 z-10 relative">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+            <h1 class="text-xl font-bold tracking-wide">COMMAND CENTER <span
+                    class="text-gray-500 text-sm font-normal">v2.0</span></h1>
+        </div>
+        <div class="flex gap-4 text-sm text-gray-400">
+            <div id="stats-buffer">Buffer: 0</div>
+            <div id="stats-live">Live: 0</div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex overflow-hidden">
+
+        <!-- LEFT: INBOX (Buffer) -->
+        <section class="flex-1 flex flex-col border-r border-gray-700 bg-gray-900/50 min-w-0">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h2 class="font-semibold text-lg text-blue-400">📸 INBOX (Camera Buffer)</h2>
+                <button onclick="refreshBuffer()" class="p-2 hover:bg-gray-700 rounded-full transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="buffer-grid"
+                class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+                <!-- Javascript will inject items here -->
+                <div class="col-span-full text-center text-gray-500 py-20">Waiting for photos...</div>
+            </div>
+        </section>
+
+        <!-- RIGHT: LIVE (Public) -->
+        <section class="flex-1 flex flex-col bg-black/20 min-w-0">
+            <div class="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                <h2 class="font-semibold text-lg text-green-400">🚀 LIVE (Public Gallery)</h2>
+                <button onclick="refreshLive()" class="p-2 hover:bg-gray-700 rounded-full transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="live-grid"
+                class="flex-1 overflow-y-auto p-4 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 pb-20">
+                <!-- Javascript will inject items here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- EDITOR MODAL -->
+    <div id="editor-modal"
+        class="fixed inset-0 bg-black/90 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-gray-800 rounded-xl overflow-hidden shadow-2xl max-w-5xl w-full mx-4 flex flex-col border border-gray-700"
+            style="height: 85vh;">
+
+            <!-- Modal Header -->
+            <div class="h-14 border-b border-gray-700 px-6 flex items-center justify-between bg-gray-900">
+                <h3 class="font-semibold text-lg">Review & Edit</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white">✕</button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Image Preview Area -->
+                <div class="flex-1 bg-black flex items-center justify-center relative p-4 group">
+                    <img id="editor-img" src=""
+                        class="max-h-full max-w-full object-contain shadow-lg transition-all duration-200"
+                        style="filter: brightness(1);">
+
+                    <!-- Compare Button (Hold to see original) -->
+                    <button onmousedown="tempReset()" onmouseup="tempApply()" onmouseleave="tempApply()"
+                        class="absolute top-4 left-4 bg-gray-800/80 px-3 py-1 rounded text-xs border border-gray-600 opacity-50 group-hover:opacity-100 transition">Hold
+                        to Compare</button>
+                </div>
+
+                <!-- Controls Sidebar -->
+                <div class="w-80 bg-gray-800 border-l border-gray-700 flex flex-col p-6 gap-8">
+
+                    <!-- Filename Info -->
+                    <div>
+                        <label class="text-xs text-gray-500 uppercase tracking-wider font-bold">Filename</label>
+                        <div id="editor-filename" class="text-sm text-gray-300 break-all mt-1">DSC0001.jpg</div>
+                    </div>
+
+                    <!-- Exposure Control -->
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs text-gray-500 uppercase tracking-wider font-bold">Exposure</label>
+                            <span id="exposure-val" class="text-xs font-mono bg-gray-700 px-2 py-0.5 rounded">0.0</span>
+                        </div>
+                        <input type="range" id="exposure-slider" min="-2" max="2" step="0.1" value="0"
+                            class="w-full h-1 bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            oninput="updatePreview()">
+                        <div class="flex justify-between text-[10px] text-gray-500 mt-2">
+                            <span>-2.0</span>
+                            <span onclick="resetExposure()" class="cursor-pointer hover:text-blue-400">Reset</span>
+                            <span>+2.0</span>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-auto flex flex-col gap-3">
+                        <button onclick="publishCurrent()"
+                            class="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg shadow-lg hover:shadow-blue-500/30 transition transform hover:-translate-y-0.5 flex justify-center items-center gap-2">
+                            <span>🚀 Publish Now</span>
+                        </button>
+                        <button onclick="rejectCurrent()"
+                            class="w-full py-3 bg-red-900/30 hover:bg-red-900/50 text-red-400 hover:text-red-300 border border-red-900 rounded-lg text-sm transition">
+                            🗑 Reject & Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast"
+        class="fixed bottom-6 right-6 bg-gray-800 border border-gray-700 text-white px-6 py-3 rounded-lg shadow-xl transform translate-y-20 opacity-0 transition duration-300 z-50 flex items-center gap-3">
+        <span id="toast-icon">✅</span>
+        <span id="toast-msg">Action Successful</span>
+    </div>
+
+    <script>
+        let currentFilename = null;
+        let currentExposure = 0.0;
+
+        // --- Data Fetching ---
+        async function fetchBuffer() {
+            try {
+                const res = await fetch('/api/buffer');
+                const data = await res.json();
+                renderBuffer(data.images);
+                document.getElementById('stats-buffer').innerText = `Buffer: ${data.images.length}`;
+            } catch (e) { console.error(e); }
+        }
+
+        async function fetchLive() {
+            try {
+                const res = await fetch('/api/live');
+                const data = await res.json();
+                renderLive(data.images);
+                document.getElementById('stats-live').innerText = `Live: ${data.images.length}`;
+            } catch (e) { console.error(e); }
+        }
+
+        function renderBuffer(images) {
+            const grid = document.getElementById('buffer-grid');
+            if (images.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-600 py-10 flex flex-col items-center gap-2"><div class="text-4xl opacity-20">📷</div><div>No new photos</div></div>';
+                return;
+            }
+
+            grid.innerHTML = images.map(img => `
+                <div class="relative group bg-gray-800 rounded-lg overflow-hidden border border-gray-700 cursor-pointer hover:border-blue-500 transition shadow-sm hover:shadow-lg" onclick="openEditor('${img}')">
+                    <div class="aspect-[3/2] overflow-hidden bg-gray-900">
+                        <img src="/raw/${img}" class="w-full h-full object-cover transition duration-500 group-hover:scale-105 opacity-80 group-hover:opacity-100" loading="lazy">
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition flex flex-col justify-end p-3">
+                        <div class="text-xs text-white truncate font-mono">${img}</div>
+                        <div class="text-[10px] text-blue-300 mt-0.5">Click to Review</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderLive(images) {
+            const grid = document.getElementById('live-grid');
+            if (images.length === 0) {
+                grid.innerHTML = '<div class="col-span-full text-center text-gray-600 py-10">Empty gallery</div>';
+                return;
+            }
+
+            grid.innerHTML = images.map(img => `
+                <div class="relative group bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
+                    <div class="aspect-[3/2] overflow-hidden bg-gray-900">
+                        <img src="/live/${img}?t=${new Date().getTime()}" class="w-full h-full object-cover" loading="lazy">
+                    </div>
+                    <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition">
+                        <button onclick="unpublishImage('${img}')" class="bg-red-600 text-white p-1.5 rounded-md hover:bg-red-500 shadow-md text-xs font-bold" title="Unpublish">
+                            ✕
+                        </button>
+                    </div>
+                    <div class="p-2 text-[10px] text-gray-500 truncate text-center">${img}</div>
+                </div>
+            `).join('');
+        }
+
+        // --- Editor Logic ---
+        function openEditor(filename) {
+            currentFilename = filename;
+            resetExposure();
+            document.getElementById('editor-img').src = `/raw/${filename}`;
+            document.getElementById('editor-filename').innerText = filename;
+            document.getElementById('editor-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('editor-modal').classList.add('hidden');
+        }
+
+        // Exposure Logic
+        function updatePreview() {
+            const val = document.getElementById('exposure-slider').value;
+            currentExposure = parseFloat(val);
+            document.getElementById('exposure-val').innerText = currentExposure > 0 ? `+${currentExposure}` : currentExposure;
+
+            // CSS Brightness approximation: roughly 2^exposure
+            // 0 -> 100%, 1 -> 200%, -1 -> 50%
+            const brightness = Math.pow(2, currentExposure);
+            document.getElementById('editor-img').style.filter = `brightness(${brightness})`;
+        }
+
+        function resetExposure() {
+            document.getElementById('exposure-slider').value = 0;
+            updatePreview();
+        }
+
+        function tempReset() {
+            document.getElementById('editor-img').style.filter = `brightness(1)`;
+        }
+        function tempApply() {
+            updatePreview();
+        }
+
+        // --- API Actions ---
+        async function publishCurrent() {
+            if (!currentFilename) return;
+            const btn = event.target.closest('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Processing...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/publish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: currentFilename, exposure: currentExposure })
+                });
+                if (res.ok) {
+                    showToast('✅ Published Successfully');
+                    closeModal();
+                    refreshAll();
+                } else {
+                    showToast('❌ Failed to publish');
+                }
+            } catch (e) {
+                console.error(e);
+                showToast('❌ Network error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        async function rejectCurrent() {
+            if (!confirm('Are you sure you want to reject and remove this photo?')) return;
+
+            try {
+                const res = await fetch('/api/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: currentFilename })
+                });
+                if (res.ok) {
+                    showToast('🗑 Rejection confirmed');
+                    closeModal();
+                    refreshAll();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function unpublishImage(filename) {
+            if (!confirm(`Unpublish ${filename}? It will be removed from the public gallery.`)) return;
+
+            try {
+                const res = await fetch('/api/unpublish', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: filename })
+                });
+                if (res.ok) {
+                    showToast('👌 Unpublished');
+                    refreshAll();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // --- Utils ---
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = msg;
+            t.classList.remove('translate-y-20', 'opacity-0');
+            setTimeout(() => t.classList.add('translate-y-20', 'opacity-0'), 3000);
+        }
+
+        function refreshAll() {
+            fetchBuffer();
+            fetchLive();
+        }
+
+        function refreshBuffer() { fetchBuffer(); }
+        function refreshLive() { fetchLive(); }
+
+        // Start Polling
+        refreshAll();
+        setInterval(refreshBuffer, 3000); // Check buffer every 3s
+        setInterval(fetchLive, 5000);   // Sync live list every 5s
+
+    </script>
+</body>
+
+</html>
