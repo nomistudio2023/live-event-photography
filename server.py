@@ -251,11 +251,24 @@ async def get_buffer_images():
 
 @app.get("/api/live")
 async def get_live_images():
-    """List images in Web Public folder"""
+    """List images in Web Public folder with metadata"""
     try:
-        files = [f for f in os.listdir(CONFIG["web_folder"]) 
-                 if f.lower().endswith(('.jpg', '.jpeg')) and not f.startswith('.')]
-        files.sort(key=lambda x: os.path.getmtime(os.path.join(CONFIG["web_folder"], x)), reverse=True)
+        folder = CONFIG["web_folder"]
+        files = []
+        for f in os.listdir(folder):
+            if f.lower().endswith(('.jpg', '.jpeg', '.png')) and not f.startswith('.'):
+                path = os.path.join(folder, f)
+                stat = os.stat(path)
+                ts = stat.st_mtime
+                files.append({
+                    "filename": f,
+                    "timestamp": ts,
+                    "time_str": datetime.fromtimestamp(ts).strftime('%H:%M:%S'),
+                    "size_kb": round(stat.st_size / 1024, 1)
+                })
+        
+        # Sort by timestamp (newest first)
+        files.sort(key=lambda x: x["timestamp"], reverse=True)
         return {"images": files}
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
