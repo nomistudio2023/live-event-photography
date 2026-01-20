@@ -508,19 +508,21 @@
                 if (!response.ok) throw new Error('Manifest not found');
 
                 const newPhotos = await response.json();
+                console.log('Loaded photos:', newPhotos.length, 'IMAGE_BASE_URL:', IMAGE_BASE_URL);
 
                 // Compare arrays to check if updates are needed
                 if (JSON.stringify(newPhotos) !== JSON.stringify(allPhotos)) {
                     // If just initialized or data changed
                     allPhotos = newPhotos;
+                    console.log('Updating gallery with', allPhotos.length, 'photos');
                     updateGallery(allPhotos);
                 }
 
                 document.getElementById('photo-count').textContent = newPhotos.length;
 
             } catch (error) {
-                // Silent fail/retry
-                // console.log('Polling...', error);
+                // Log errors for debugging
+                console.log('Polling error:', error);
             }
         }
 
