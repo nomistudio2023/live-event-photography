@@ -190,6 +190,9 @@ class BatchPublishRequest(BaseModel):
 class ArchiveRequest(BaseModel):
     filename: str
 
+class UnpublishRequest(BaseModel):
+    filename: str
+
 # Helpers
 def update_manifest():
     """Generates manifest.json for the frontend"""
