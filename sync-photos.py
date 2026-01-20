@@ -61,41 +61,53 @@ def git_commit_push():
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             message = f"Auto-sync photos - {timestamp}\n\nAuto-generated commit from sync script"
 
-            subprocess.run(
+            commit_result = subprocess.run(
                 ["git", "commit", "-m", message],
-                check=True,
-                capture_output=True
-            )
-
-            result = subprocess.run(
-                ["git", "push", "origin", "main"],
                 capture_output=True,
                 text=True
             )
 
-            if result.returncode == 0:
-                print(f"✅ [{timestamp}] 已推送到 GitHub")
-                return True
+            if commit_result.returncode == 0:
+                print(f"   commit OK")
+
+                # 尝试推送
+                result = subprocess.run(
+                    ["git", "push", "origin", "main"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+
+                if result.returncode == 0:
+                    print(f"✅ [{timestamp}] Pushed to GitHub - Cloudflare Pages will deploy in 1-2 minutes")
+                    return True
+                else:
+                    print(f"⚠️  [{timestamp}] Local commit OK, but push to GitHub failed")
+                    print(f"   Error: {result.stderr[:200]}")
+                    print(f"   Please run: git push origin main")
+                    return False
             else:
-                print(f"❌ [{timestamp}] Git push 失败: {result.stderr}")
+                print(f"Commit failed: {commit_result.stderr}")
                 return False
         else:
-            print(f"⏭️  [{datetime.now().strftime('%H:%M:%S')}] 沒有文件變更")
             return False
 
+    except subprocess.TimeoutExpired:
+        print(f"Push timeout - possible network issue")
+        return False
     except subprocess.CalledProcessError as e:
-        print(f"❌ Git 命令失敗: {e}")
+        print(f"Git command failed: {e}")
         return False
     except Exception as e:
-        print(f"❌ 錯誤: {e}")
+        print(f"Error: {e}")
         return False
 
 def main():
     """主循环"""
-    print("🎬 Live Event Photo Sync - 自動同步腳本")
-    print(f"📂 監視目錄: {PHOTOS_DIR}")
-    print("⏱️  每 5 秒檢查一次文件變更\n")
-    print("按 Ctrl+C 停止\n")
+    print("🎬 Live Event Photo Sync - Auto-sync script")
+    print(f"📂 Monitoring: {PHOTOS_DIR}")
+    print("Check for changes every 5 seconds\n")
+    print("Press Ctrl+C to stop\n")
 
     previous_photos = set(load_manifest())
 
@@ -105,34 +117,41 @@ def main():
 
             # 检查是否有变化
             if current_photos != previous_photos:
-                print(f"\n📸 偵測到變更！")
-                print(f"   舊照片数: {len(previous_photos)}")
-                print(f"   新照片数: {len(current_photos)}")
+                print(f"\n📸 Changes detected!")
+                print(f"   Old photos: {len(previous_photos)}")
+                print(f"   New photos: {len(current_photos)}")
 
                 # 显示具体变化
                 added = current_photos - previous_photos
                 removed = previous_photos - current_photos
 
                 if added:
-                    print(f"   ✨ 新增: {', '.join(sorted(added))}")
+                    print(f"   Add: {', '.join(sorted(list(added)[:3]))}", end='')
+                    if len(added) > 3:
+                        print(f" ... and {len(added) - 3} more")
+                    else:
+                        print()
                 if removed:
-                    print(f"   🗑️  删除: {', '.join(sorted(removed))}")
+                    print(f"   Delete: {', '.join(sorted(list(removed)[:3]))}", end='')
+                    if len(removed) > 3:
+                        print(f" ... and {len(removed) - 3} more")
+                    else:
+                        print()
 
                 # 更新 manifest.json
                 new_manifest = sorted(list(current_photos))
                 save_manifest(new_manifest)
-                print(f"   📝 已更新 manifest.json")
+                print(f"   Updated manifest.json\n")
 
                 # 提交和推送
-                if git_commit_push():
-                    print(f"   🌐 Cloudflare Pages 將在 1-2 分鐘內自動部署\n")
+                git_commit_push()
 
                 previous_photos = current_photos
 
             time.sleep(5)
 
     except KeyboardInterrupt:
-        print("\n\n👋 已停止監視")
+        print("\n\n👋 Stopped")
 
 if __name__ == "__main__":
     main()
