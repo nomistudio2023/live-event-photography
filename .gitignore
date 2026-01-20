@@ -1,0 +1,30 @@
+# 排除大型照片檔案 - 改用 Cloudflare R2 存放
+photos_web/*.jpg
+photos_web/*.jpeg
+photos_web/*.png
+photos_web/*.webp
+photos_web/*.gif
+
+# 保留 manifest.json - 這個要上傳到 GitHub
+!photos_web/manifest.json
+
+# 排除其他不需要的檔案
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+.env
+firebase-debug.log
+photos_original/
+photos_buffer/
+photos_archive/
+photos_trash/
+
+# 排除舊版本
+index_v2.html
+auto_compress.py
+discussion_log.md
+project_status_20260118.md
+generate_watermark.py
+server.py
+templates/
