@@ -1,0 +1,24 @@
+{
+    "watch_folder": "./photos_original",
+    "output_folder": "./photos_web",
+    "max_size": 1600,
+    "jpeg_quality": 85,
+    "processing": {
+        "sharpen": true,
+        "progressive": true,
+        "watermark": {
+            "enabled": true,
+            "mode": "corner_logo",
+            "image_path": "./assets/watermark.png",
+            "position": "bottom-right",
+            "opacity": 0.8,
+            "scale_percentage": 20,
+            "margin": 50
+        },
+        "frame": {
+            "enabled": false,
+            "image_path": "./assets/frame.png",
+            "mode": "cover"
+        }
+    }
+}
