@@ -23,6 +23,7 @@ CONFIG = {
     "trash_folder": "./photos_trash",     # Rejected
     "archive_folder": "./photos_archive", # Parked/Saved for later
     "assets_folder": "./assets",
+    "history_file": "history.json",
     "max_size": 1600,
     "jpeg_quality": 85,
     "processing": {
@@ -43,6 +44,49 @@ CONFIG = {
 for folder in [CONFIG["buffer_folder"], CONFIG["web_folder"], CONFIG["trash_folder"], CONFIG["archive_folder"]]:
     os.makedirs(folder, exist_ok=True)
 
+# --- History Management ---
+def load_history():
+    if os.path.exists(CONFIG["history_file"]):
+        try:
+            with open(CONFIG["history_file"], "r") as f:
+                return json.load(f)
+        except Exception as e:
+            logger.error(f"Failed to load history file: {e}")
+            return {}
+    return {}
+
+def save_history(history):
+    try:
+        with open(CONFIG["history_file"], "w") as f:
+            json.dump(history, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save history file: {e}")
+
+def update_history(filename, action):
+    """
+    action: 'publish' or 'unpublish'
+    """
+    history = load_history()
+    # Ensure filename is consistent (e.g., always .jpg for web)
+    name, ext = os.path.splitext(filename)
+    processed_filename = name + ".jpg"
+
+    if processed_filename not in history:
+        history[processed_filename] = {"published": 0, "unpublished": 0}
+    
+    if action == "publish":
+        history[processed_filename]["published"] += 1
+    elif action == "unpublish":
+        history[processed_filename]["unpublished"] += 1
+        
+    save_history(history)
+
+def get_file_history(filename):
+    history = load_history()
+    name, ext = os.path.splitext(filename)
+    processed_filename = name + ".jpg"
+    return history.get(processed_filename, {"published": 0, "unpublished": 0})
+
 # --- Image Processor Logic (Integrated) ---
 class ImageProcessor:
     def __init__(self, config):
@@ -59,19 +103,12 @@ class ImageProcessor:
             except Exception as e:
                 logger.error(f"Failed to load watermark: {e}")
 
-    def process_and_publish(self, filename: str, exposure: float = 0.0):
+    def process_image(self, source_path: str, dest_path: str, exposure: float = 0.0):
         """
-        Reads from BUFFER, Applies Edits, Adds Watermark, Saves to WEB.
+        Applies edits and watermark to an image and saves it.
         """
-        source_path = os.path.join(self.config["buffer_folder"], filename)
-        dest_path = os.path.join(self.config["web_folder"], filename)
-        
-        # Change extension to .jpg for web if not already
-        name, ext = os.path.splitext(filename)
-        dest_path = os.path.join(self.config["web_folder"], name + ".jpg")
-
         if not os.path.exists(source_path):
-            raise FileNotFoundError(f"Source file not found: {filename}")
+            raise FileNotFoundError(f"Source file not found: {source_path}")
 
         try:
             with Image.open(source_path) as img:
@@ -80,11 +117,7 @@ class ImageProcessor:
                 if img.mode != "RGB":
                     img = img.convert("RGB")
 
-                # 2. Exposure Compensation (New Feature!)
-                # 1.0 is original. 1.2 is +20% brightness.
-                # Mapping exposure (approx EV) to brightness multiplier:
-                # 0EV = 1.0, +1EV ~= 2.0 brightness (roughly)
-                # Let's use a simpler linear scale for now or 2^exposure
+                # 2. Exposure Compensation
                 brightness_factor = 2 ** exposure
                 if exposure != 0.0:
                     enhancer = ImageEnhance.Brightness(img)
@@ -110,11 +143,11 @@ class ImageProcessor:
                     progressive=self.config["processing"]["progressive"]
                 )
                 
-                logger.info(f"Published: {filename} (Exp: {exposure})")
+                logger.info(f"Processed and saved: {os.path.basename(source_path)} to {dest_path} (Exp: {exposure})")
                 return True
 
         except Exception as e:
-            logger.error(f"Processing failed: {e}")
+            logger.error(f"Processing failed for {source_path}: {e}")
             raise e
 
     def _apply_watermark(self, img):
@@ -236,11 +269,16 @@ async def get_buffer_images():
                 stat = os.stat(path)
                 # Use modification time as a proxy for capture time if simple
                 ts = stat.st_mtime
+                
+                hist = get_file_history(f) # Get history for buffer files
+                
                 files.append({
                     "filename": f,
                     "timestamp": ts,
                     "time_str": datetime.fromtimestamp(ts).strftime('%H:%M:%S'),
-                    "size_kb": round(stat.st_size / 1024, 1)
+                    "size_kb": round(stat.st_size / 1024, 1),
+                    "published_count": hist["published"],
+                    "unpublished_count": hist["unpublished"]
                 })
         
         # Sort by timestamp (newest first)
@@ -260,11 +298,17 @@ async def get_live_images():
                 path = os.path.join(folder, f)
                 stat = os.stat(path)
                 ts = stat.st_mtime
+                
+                # Get History
+                hist = get_file_history(f)
+                
                 files.append({
                     "filename": f,
                     "timestamp": ts,
                     "time_str": datetime.fromtimestamp(ts).strftime('%H:%M:%S'),
-                    "size_kb": round(stat.st_size / 1024, 1)
+                    "size_kb": round(stat.st_size / 1024, 1),
+                    "published_count": hist["published"],
+                    "unpublished_count": hist["unpublished"]
                 })
         
         # Sort by timestamp (newest first)
@@ -277,13 +321,14 @@ async def get_live_images():
 async def publish_image(req: PublishRequest):
     """Action: Buffer -> Process -> Web"""
     try:
-        processor.process_and_publish(req.filename, req.exposure)
+        source_path = os.path.join(CONFIG["buffer_folder"], req.filename)
+        name, ext = os.path.splitext(req.filename)
+        dest_path = os.path.join(CONFIG["web_folder"], name + ".jpg") # Ensure .jpg for web
+
+        processor.process_image(source_path, dest_path, req.exposure)
         
-        # Remove from buffer after successful publish? 
-        # Usually yes, or move to a 'processed' folder. 
-        # For now, let's KEEP it in buffer but maybe UI marks it as done.
-        # actually, to keep buffer clean, let's move it to a 'processed' folder if desired.
-        # But user might want to re-edit. Let's keep it for now.
+        # Update History
+        update_history(req.filename, "publish")
         
         update_manifest()
         return {"status": "success", "filename": req.filename}
@@ -298,7 +343,12 @@ async def batch_publish_images(req: BatchPublishRequest):
     
     for fname in req.filenames:
         try:
-            processor.process_and_publish(fname, req.exposure)
+            source_path = os.path.join(CONFIG["buffer_folder"], fname)
+            name, ext = os.path.splitext(fname)
+            dest_path = os.path.join(CONFIG["web_folder"], name + ".jpg") # Ensure .jpg for web
+
+            processor.process_image(source_path, dest_path, req.exposure)
+            update_history(fname, "publish")
             success_count += 1
         except Exception as e:
             errors.append(f"{fname}: {str(e)}")
@@ -339,9 +389,12 @@ async def unpublish_image(req: UnpublishRequest):
     """Action: Web -> Remove (Hide from public)"""
     try:
         # We don't delete the Source file, just the Web file.
-        target = os.path.join(CONFIG["web_folder"], req.filename)
+        name, ext = os.path.splitext(req.filename)
+        target_filename = name + ".jpg" # Ensure .jpg for web
+        target = os.path.join(CONFIG["web_folder"], target_filename)
         if os.path.exists(target):
             os.remove(target)
+            update_history(req.filename, "unpublish") # Update history for unpublish
             update_manifest()
             return {"status": "unpublished", "filename": req.filename}
         else:
