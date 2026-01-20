@@ -1,0 +1,14 @@
+name = "live-event-photography"
+type = "javascript"
+main = "src/index.js"
+
+# Pages configuration
+pages_build_caching = true
+
+# R2 Bucket Binding
+[[r2.buckets]]
+binding = "PHOTOS"
+bucket_name = "nomilivegallery"
+
+[env.production]
+vars = { ENVIRONMENT = "production" }
