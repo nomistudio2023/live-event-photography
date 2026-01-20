@@ -585,7 +585,8 @@
                     featuredImg.parentElement.offsetHeight; /* trigger reflow */
                     featuredImg.parentElement.style.animation = 'fadeIn 0.5s ease';
                 };
-                img.src = IMAGE_BASE_URL + newestPhoto;
+                // Add cache buster to force fresh image load
+                img.src = IMAGE_BASE_URL + newestPhoto + '?v=' + new Date().getTime();
             }
 
             // 2. Handle Gallery (Masonry)
@@ -600,8 +601,8 @@
 
                 return `
                     <div class="gallery-item" onclick="openLightboxIndex(${index})">
-                        <img src="${IMAGE_BASE_URL}${photo}" 
-                             onload="this.classList.add('loaded')" 
+                        <img src="${IMAGE_BASE_URL}${photo}?v=${Date.now()}"
+                             onload="this.classList.add('loaded')"
                              alt="Event Photo ${index}">
                     </div>
                 `;
