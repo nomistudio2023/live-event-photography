@@ -375,7 +375,7 @@
                 const res = await fetch('/api/batch_publish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filenames: files, exposure: 0.0 }) # Batch currently defaults to 0 exposure
+                    body: JSON.stringify({ filenames: files, exposure: 0.0 }) // Batch currently defaults to 0 exposure
                 });
 
                 if (res.ok) {
