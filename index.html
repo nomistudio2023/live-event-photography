@@ -16,12 +16,12 @@
 
             /* --- Layout Configuration --- */
             /* 調整這裡的數字來改變不同裝置的欄位數 */
-            --cols-desktop: 4;
-            /* 電腦版 */
-            --cols-tablet: 3;
+            --cols-desktop: 3;
+            /* 電腦版: 改為 3 欄 */
+            --cols-tablet: 2;
             /* 平板/橫式手機 */
-            --cols-mobile: 3;
-            /* 手機直式 (依照您的需求設為3欄) */
+            --cols-mobile: 1;
+            /* 手機直式 */
         }
 
         body {
@@ -120,18 +120,15 @@
             transform: scale(1.01);
         }
 
-        /* Masonry Grid (CSS Columns) */
+        /* Gallery Grid (CSS Grid) */
         .gallery-masonry {
-            column-count: var(--cols-desktop);
-            column-gap: 1rem;
-            /* 縮小間距以容納更多欄 */
+            display: grid;
+            grid-template-columns: repeat(var(--cols-desktop), 1fr);
+            gap: 1rem;
             padding-bottom: 4rem;
         }
 
         .gallery-item {
-            break-inside: avoid;
-            /* Prevent breaking elements between columns */
-            margin-bottom: 1rem;
             border-radius: 8px;
             overflow: hidden;
             background-color: var(--card-bg);
@@ -139,6 +136,8 @@
             transition: transform 0.3s, filter 0.3s;
             cursor: pointer;
             position: relative;
+            /* 讓不同比例照片在 Grid 中自然對齊上方 */
+            align-self: start;
         }
 
         .gallery-item:hover {
@@ -160,21 +159,21 @@
         }
 
         /* Responsive Columns */
-        @media (max-width: 1200px) {
+        @media (max-width: 900px) {
             .gallery-masonry {
-                column-count: var(--cols-tablet);
+                grid-template-columns: repeat(var(--cols-tablet), 1fr);
             }
         }
 
-        @media (max-width: 600px) {
+        @media (max-width: 400px) {
             .gallery-masonry {
-                column-count: var(--cols-mobile);
-                column-gap: 0.5rem;
+                grid-template-columns: 1fr;
+                /* 單欄 */
+                gap: 0.5rem;
             }
 
-            .gallery-item {
-                margin-bottom: 0.5rem;
-                border-radius: 4px;
+            .container {
+                padding: 0 1rem;
             }
 
             .hero-content h1 {
