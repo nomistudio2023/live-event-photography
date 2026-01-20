@@ -670,9 +670,11 @@
             const btn = document.getElementById('download-btn');
             const fileName = allPhotos[currentPhotoIndex];
             const src = IMAGE_BASE_URL + fileName;
+            // Add cache buster for lightbox images
+            const srcWithVersion = src + '?v=' + new Date().getTime();
 
-            img.src = src;
-            btn.href = src;
+            img.src = srcWithVersion;
+            btn.href = src; // Download link without version param
         }
 
         function inputNav(direction) {
