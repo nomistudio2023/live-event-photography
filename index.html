@@ -512,10 +512,8 @@
                 // Compare arrays to check if updates are needed
                 if (JSON.stringify(newPhotos) !== JSON.stringify(allPhotos)) {
                     // If just initialized or data changed
-                    if (newPhotos.length > 0) {
-                        allPhotos = newPhotos;
-                        updateGallery(allPhotos);
-                    }
+                    allPhotos = newPhotos;
+                    updateGallery(allPhotos);
                 }
 
                 document.getElementById('photo-count').textContent = newPhotos.length;
