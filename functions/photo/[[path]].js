@@ -4,7 +4,7 @@ export async function onRequest(context) {
 
   try {
     // Get the object from R2
-    const object = await env.PHOTOS.get(`nomilivegallery/${path}`);
+    const object = await env.PHOTOS.get(path);
 
     if (!object) {
       return new Response('Photo not found', { status: 404 });
