@@ -171,6 +171,8 @@ app.add_middleware(
 # Static Mounts
 app.mount("/raw", StaticFiles(directory=CONFIG["buffer_folder"]), name="raw")
 app.mount("/live", StaticFiles(directory=CONFIG["web_folder"]), name="live")
+# Mount photos_web to match the path expected by index.html
+app.mount("/photos_web", StaticFiles(directory=CONFIG["web_folder"]), name="photos_web")
 app.mount("/assets", StaticFiles(directory=CONFIG["assets_folder"]), name="assets")
 
 templates = Jinja2Templates(directory="templates")
@@ -212,6 +214,15 @@ def update_manifest():
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     return templates.TemplateResponse("admin.html", {"request": request})
+
+@app.get("/gallery", response_class=HTMLResponse)
+async def gallery():
+    """Serve the public facing live gallery"""
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except Exception as e:
+        return f"Error loading gallery: {e}"
 
 @app.get("/api/buffer")
 async def get_buffer_images():

@@ -84,7 +84,12 @@
             <h1 class="font-bold tracking-wider text-gray-100">CULLING STATION <span
                     class="text-xs text-gray-500 font-normal ml-1">v2.2</span></h1>
         </div>
-        <div class="flex gap-4 text-xs font-mono text-gray-400">
+        <div class="flex gap-4 text-xs font-mono text-gray-400 items-center">
+            <a href="/gallery" target="_blank"
+                class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
+                <span>↗</span> Open Gallery
+            </a>
+            <div class="h-4 w-px bg-gray-700 mx-2"></div>
             <span id="stats-buffer">Inbox: 0</span>
             <span class="text-gray-600">|</span>
             <span id="stats-live" class="text-green-500">Live: 0</span>
@@ -483,12 +488,15 @@
                 document.getElementById('stats-live').innerText = `Live: ${data.images.length}`;
 
                 const grid = document.getElementById('live-grid');
-                // Adjust Columns based on width (simple CSS grid auto-fit is hard with variable parent width, 
-                // so we use grid-cols-2 as default, but LiveFeed can be resized)
-                // 4:3 Aspect Ratio = aspect-[4/3]
+                // Use single column (grid-cols-1) for better visibility in sidebar
+                grid.className = "flex-1 overflow-y-auto p-4 flex flex-col gap-4 content-start";
+
                 grid.innerHTML = data.images.map(img => `
-                    <div class="relative group aspect-[4/3] bg-gray-800 rounded-lg overflow-hidden border border-gray-700 hover:border-red-500 transition">
-                         <img src="/live/${img}?t=${new Date().getTime()}" class="w-full h-full object-cover">
+                    <div class="relative group w-full bg-gray-800 rounded-lg overflow-hidden border border-gray-700 shadow-sm hover:border-red-500 transition shrink-0">
+                         <!-- Force 4:3 Aspect Ratio Container -->
+                         <div class="aspect-[4/3] w-full relative">
+                            <img src="/live/${img}?t=${new Date().getTime()}" class="absolute inset-0 w-full h-full object-cover">
+                         </div>
                          
                          <!-- Unpublish Overlay -->
                          <div class="absolute inset-0 bg-red-900/80 opacity-0 group-hover:opacity-100 transition flex items-center justify-center cursor-pointer"
