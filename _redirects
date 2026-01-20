@@ -1,0 +1,4 @@
+# Cloudflare Pages static redirects
+# This file ensures the site is treated as a static site, not a build project
+
+/* /index.html 200
