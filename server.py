@@ -103,47 +103,76 @@ class ImageProcessor:
             except Exception as e:
                 logger.error(f"Failed to load watermark: {e}")
 
-    def process_image(self, source_path: str, dest_path: str, exposure: float = 0.0):
+    def process_image(self, source_path: str, dest_path: str, exposure: float = 0.0,
+                       rotation: int = 0, straighten: float = 0.0, scale: float = 1.0):
         """
-        Applies edits and watermark to an image and saves it.
+        Applies edits (exposure, rotation, straighten, scale) and watermark to an image and saves it.
         """
         if not os.path.exists(source_path):
             raise FileNotFoundError(f"Source file not found: {source_path}")
 
         try:
             with Image.open(source_path) as img:
-                # 1. Orientation Fix
+                # 1. Orientation Fix (EXIF)
                 img = ImageOps.exif_transpose(img)
                 if img.mode != "RGB":
                     img = img.convert("RGB")
 
-                # 2. Exposure Compensation
+                # 2. Rotation (90° increments)
+                if rotation == 90:
+                    img = img.transpose(Image.Transpose.ROTATE_270)  # PIL rotates counter-clockwise
+                elif rotation == 180:
+                    img = img.transpose(Image.Transpose.ROTATE_180)
+                elif rotation == 270:
+                    img = img.transpose(Image.Transpose.ROTATE_90)
+
+                # 3. Straighten (fine angle adjustment)
+                total_angle = straighten
+                if total_angle != 0:
+                    # Expand to avoid black corners, then crop back
+                    img = img.rotate(total_angle, resample=Image.Resampling.BICUBIC, expand=True)
+
+                # 4. Scale (zoom)
+                if scale != 1.0:
+                    new_width = int(img.width * scale)
+                    new_height = int(img.height * scale)
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+
+                    # Center crop if scaled up, or keep as is if scaled down
+                    if scale > 1.0:
+                        # Crop to original aspect ratio from center
+                        left = (new_width - img.width // scale) // 2
+                        top = (new_height - img.height // scale) // 2
+                        # Keep the scaled size for now - user expects zoomed result
+
+                # 5. Exposure Compensation
                 brightness_factor = 2 ** exposure
                 if exposure != 0.0:
                     enhancer = ImageEnhance.Brightness(img)
                     img = enhancer.enhance(brightness_factor)
 
-                # 3. Resize
+                # 6. Resize to max size
                 max_size = self.config["max_size"]
                 img.thumbnail((max_size, max_size), Image.Resampling.LANCZOS)
 
-                # 4. Sharpen
+                # 7. Sharpen
                 if self.config["processing"]["sharpen"]:
                     img = img.filter(ImageFilter.UnsharpMask(radius=2, percent=150, threshold=3))
 
-                # 5. Watermark
+                # 8. Watermark
                 img = self._apply_watermark(img)
 
-                # 6. Save
+                # 9. Save
                 img.save(
-                    dest_path, 
-                    "JPEG", 
-                    quality=self.config["jpeg_quality"], 
-                    optimize=True, 
+                    dest_path,
+                    "JPEG",
+                    quality=self.config["jpeg_quality"],
+                    optimize=True,
                     progressive=self.config["processing"]["progressive"]
                 )
-                
-                logger.info(f"Processed and saved: {os.path.basename(source_path)} to {dest_path} (Exp: {exposure})")
+
+                logger.info(f"Processed: {os.path.basename(source_path)} -> {dest_path} "
+                           f"(Exp:{exposure}, Rot:{rotation}, Str:{straighten}, Scale:{scale})")
                 return True
 
         except Exception as e:
@@ -214,6 +243,9 @@ templates = Jinja2Templates(directory="templates")
 class PublishRequest(BaseModel):
     filename: str
     exposure: float = 0.0
+    rotation: int = 0        # 0, 90, 180, 270
+    straighten: float = 0.0  # -5 to +5 degrees
+    scale: float = 1.0       # 0.5 to 1.5
 
 class RejectRequest(BaseModel):
     filename: str
@@ -325,11 +357,17 @@ async def publish_image(req: PublishRequest):
         name, ext = os.path.splitext(req.filename)
         dest_path = os.path.join(CONFIG["web_folder"], name + ".jpg") # Ensure .jpg for web
 
-        processor.process_image(source_path, dest_path, req.exposure)
-        
+        processor.process_image(
+            source_path, dest_path,
+            exposure=req.exposure,
+            rotation=req.rotation,
+            straighten=req.straighten,
+            scale=req.scale
+        )
+
         # Update History
         update_history(req.filename, "publish")
-        
+
         update_manifest()
         return {"status": "success", "filename": req.filename}
     except Exception as e:

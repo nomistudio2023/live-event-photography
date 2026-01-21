@@ -1,0 +1,16 @@
+# Live Event Photography - Python Dependencies
+
+# Web Framework
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+jinja2>=3.1.0
+python-multipart>=0.0.6
+
+# Image Processing
+Pillow>=10.0.0
+
+# Mac Menu Bar App
+rumps>=0.4.0
+
+# Packaging (for development)
+pyinstaller>=6.0.0

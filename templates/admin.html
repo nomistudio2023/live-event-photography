@@ -82,9 +82,18 @@
         <div class="flex items-center gap-3">
             <div class="w-2.5 h-2.5 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
             <h1 class="font-bold tracking-wider text-gray-100">CULLING STATION <span
-                    class="text-xs text-gray-500 font-normal ml-1">v2.2</span></h1>
+                    class="text-xs text-gray-500 font-normal ml-1">v2.3</span></h1>
         </div>
         <div class="flex gap-4 text-xs font-mono text-gray-400 items-center">
+            <!-- 統計區塊（可點擊） -->
+            <div id="stats-bar" onclick="openStatsModal()"
+                class="flex items-center gap-3 bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded cursor-pointer transition border border-gray-700">
+                <span class="text-blue-400">📥 <span id="stats-uploaded">0</span></span>
+                <span class="text-gray-600">|</span>
+                <span class="text-red-400">🗑 <span id="stats-deleted">0</span></span>
+                <span class="text-gray-600">|</span>
+                <span class="text-green-400">🚀 <span id="stats-published">0</span></span>
+            </div>
             <a href="/gallery" target="_blank"
                 class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
                 <span>↗</span> Open Gallery
@@ -111,6 +120,11 @@
                         class="rounded bg-gray-700 border-gray-600 text-blue-500 focus:ring-0 cursor-pointer"
                         onclick="toggleSelectAll()">
                     <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex-1">Inbox Stream</span>
+                    <button id="btn-deselect" onclick="deselectAll()"
+                        class="text-xs text-gray-500 hover:text-white px-2 py-1 rounded hover:bg-gray-700 transition hidden"
+                        title="取消選擇">
+                        ✕ 取消選擇
+                    </button>
                     <button onclick="refreshBuffer()" class="text-gray-400 hover:text-white" title="Refresh">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -133,10 +147,16 @@
                 <div id="batch-bar"
                     class="absolute bottom-0 left-0 right-0 h-10 bg-blue-900/90 border-t border-blue-700 px-3 flex items-center justify-between hidden transition-all backdrop-blur-sm z-10">
                     <span id="selected-count" class="text-xs text-blue-200">0 selected</span>
-                    <button onclick="batchPublish()"
-                        class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold shadow-sm transition">
-                        Publish
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="batchDelete()"
+                            class="bg-red-700 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-bold shadow-sm transition">
+                            🗑 刪除
+                        </button>
+                        <button onclick="batchPublish()"
+                            class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded text-xs font-bold shadow-sm transition">
+                            🚀 發布
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -194,24 +214,75 @@
                     <div id="meta-time" class="text-xs text-gray-400 mt-0.5">-</div>
                 </div>
 
-                <!-- Exposure Slider -->
-                <div class="flex-1 w-full">
-                    <div class="flex justify-between mb-2">
-                        <span class="text-xs font-bold text-gray-500 uppercase">Exposure</span>
-                        <span id="exp-val" class="text-xs font-mono bg-gray-700 px-1.5 rounded">0.0</span>
+                <!-- Edit Tools Grid -->
+                <div class="flex-1 w-full grid grid-cols-2 gap-4">
+                    <!-- Exposure Slider -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">Exposure</span>
+                            <span id="exp-val" class="text-[10px] font-mono bg-gray-700 px-1 rounded">0.0</span>
+                        </div>
+                        <input type="range" id="exp-slider" min="-1.5" max="1.5" step="0.1" value="0"
+                            class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                            oninput="updatePreview()">
                     </div>
-                    <input type="range" id="exp-slider" min="-1.5" max="1.5" step="0.1" value="0"
-                        class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
-                        oninput="updateExposurePreview()">
-                    <div class="flex justify-between text-[10px] text-gray-600 mt-2 font-mono">
-                        <span>-1.5</span>
-                        <span class="cursor-pointer hover:text-blue-400" onclick="resetExposure()">Reset</span>
-                        <span>+1.5</span>
+
+                    <!-- Straighten Slider -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">Straighten</span>
+                            <span id="straighten-val" class="text-[10px] font-mono bg-gray-700 px-1 rounded">0°</span>
+                        </div>
+                        <input type="range" id="straighten-slider" min="-5" max="5" step="0.5" value="0"
+                            class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-yellow-500"
+                            oninput="updatePreview()">
                     </div>
+
+                    <!-- Scale Slider -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">Scale</span>
+                            <span id="scale-val" class="text-[10px] font-mono bg-gray-700 px-1 rounded">100%</span>
+                        </div>
+                        <input type="range" id="scale-slider" min="0.5" max="1.5" step="0.05" value="1"
+                            class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-green-500"
+                            oninput="updatePreview()">
+                    </div>
+
+                    <!-- Rotation Buttons -->
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">Rotate</span>
+                            <span id="rotate-val" class="text-[10px] font-mono bg-gray-700 px-1 rounded">0°</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="rotate(-90)"
+                                class="flex-1 h-6 bg-gray-700 hover:bg-gray-600 rounded text-sm transition" title="逆時針 90°">
+                                ↺
+                            </button>
+                            <button onclick="rotate(90)"
+                                class="flex-1 h-6 bg-gray-700 hover:bg-gray-600 rounded text-sm transition" title="順時針 90°">
+                                ↻
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reset Button -->
+                <div class="flex items-end">
+                    <button onclick="resetAllTransforms()"
+                        class="px-3 py-1.5 text-xs text-gray-400 hover:text-white border border-gray-600 hover:border-gray-500 rounded transition">
+                        Reset All
+                    </button>
                 </div>
 
                 <!-- Actions -->
                 <div class="flex-1 flex justify-end items-start gap-3 w-full xl:w-auto">
+                    <button onclick="deleteCurrent()"
+                        class="px-4 py-2 border border-red-800 text-red-400 hover:text-white hover:bg-red-900 hover:border-red-700 rounded text-sm transition flex flex-col items-center gap-1 group whitespace-nowrap">
+                        <span class="text-xs uppercase font-bold text-red-700 group-hover:text-red-300">Delete</span>
+                        <span>🗑 刪除</span>
+                    </button>
                     <button onclick="archiveCurrent()"
                         class="px-4 py-2 border border-gray-600 text-gray-300 hover:text-white hover:border-gray-500 rounded text-sm transition flex flex-col items-center gap-1 group whitespace-nowrap">
                         <span class="text-xs uppercase font-bold text-gray-500 group-hover:text-gray-400">Park</span>
@@ -249,6 +320,58 @@
 
     </main>
 
+    <!-- Stats Modal -->
+    <div id="stats-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center" onclick="closeStatsModal(event)">
+        <div class="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl w-[400px] max-w-[90vw]" onclick="event.stopPropagation()">
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-700">
+                <h3 class="text-lg font-bold text-white">📊 本次活動統計</h3>
+                <button onclick="closeStatsModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+            </div>
+            <!-- Modal Body -->
+            <div class="p-5 space-y-4">
+                <div class="bg-gray-900/50 rounded-lg p-4">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">活動名稱</div>
+                    <div id="modal-event-name" class="text-white font-mono">2026-01-20</div>
+                </div>
+                <div class="bg-gray-900/50 rounded-lg p-4">
+                    <div class="text-xs text-gray-500 uppercase tracking-wider mb-1">開始時間</div>
+                    <div id="modal-start-time" class="text-white font-mono">-</div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-blue-900/30 border border-blue-800 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-blue-400" id="modal-uploaded">0</div>
+                        <div class="text-xs text-blue-300 mt-1">📥 已上傳到 Inbox</div>
+                    </div>
+                    <div class="bg-green-900/30 border border-green-800 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-green-400" id="modal-published">0</div>
+                        <div class="text-xs text-green-300 mt-1">🚀 已發布到 Live</div>
+                    </div>
+                    <div class="bg-red-900/30 border border-red-800 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-red-400" id="modal-deleted">0</div>
+                        <div class="text-xs text-red-300 mt-1">🗑 已刪除</div>
+                    </div>
+                    <div class="bg-gray-700/30 border border-gray-600 rounded-lg p-4 text-center">
+                        <div class="text-3xl font-bold text-gray-300" id="modal-archived">0</div>
+                        <div class="text-xs text-gray-400 mt-1">📦 已封存</div>
+                    </div>
+                </div>
+                <div class="bg-gray-900/50 rounded-lg p-4 flex items-center justify-between">
+                    <span class="text-gray-400">☁️ R2 同步狀態</span>
+                    <span id="modal-sync-status" class="text-green-400 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> 連線中
+                    </span>
+                </div>
+            </div>
+            <!-- Modal Footer -->
+            <div class="px-5 py-4 border-t border-gray-700 flex justify-end">
+                <button onclick="closeStatsModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div id="toast"
         class="fixed top-4 right-1/2 translate-x-1/2 bg-gray-800 border border-gray-700 text-white px-4 py-2 rounded-full shadow-xl -translate-y-20 opacity-0 transition duration-300 z-50 flex items-center gap-2 text-sm pointer-events-none">
@@ -260,8 +383,47 @@
         // State
         let currentFile = null;
         let currentExposure = 0.0;
+        let currentRotation = 0;      // 90° increments: 0, 90, 180, 270
+        let currentStraighten = 0;    // Fine angle: -5 to +5
+        let currentScale = 1.0;       // Scale: 0.5 to 1.5
         let selectedFiles = new Set();
         let bufferList = [];
+        let focusIndex = -1;  // 鍵盤導航用的焦點索引
+
+        // Session Stats
+        const sessionStats = {
+            startTime: new Date(),
+            uploaded: 0,
+            published: 0,
+            deleted: 0,
+            archived: 0
+        };
+
+        function updateStatsDisplay() {
+            document.getElementById('stats-uploaded').textContent = sessionStats.uploaded;
+            document.getElementById('stats-deleted').textContent = sessionStats.deleted;
+            document.getElementById('stats-published').textContent = sessionStats.published;
+        }
+
+        function openStatsModal() {
+            const modal = document.getElementById('stats-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            // 更新彈窗內容
+            document.getElementById('modal-start-time').textContent = sessionStats.startTime.toLocaleTimeString('zh-TW');
+            document.getElementById('modal-uploaded').textContent = sessionStats.uploaded;
+            document.getElementById('modal-published').textContent = sessionStats.published;
+            document.getElementById('modal-deleted').textContent = sessionStats.deleted;
+            document.getElementById('modal-archived').textContent = sessionStats.archived;
+        }
+
+        function closeStatsModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            const modal = document.getElementById('stats-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
 
         // --- Resizable Columns Logic ---
         (function () {
@@ -323,8 +485,16 @@
             try {
                 const res = await fetch('/api/buffer');
                 const data = await res.json();
-                // Diff check: if nothing changed, don't redraw to keep selection
-                // Simple version: just redraw but restore selection visually
+
+                // 追蹤新上傳的照片數量
+                const oldFilenames = new Set(bufferList.map(f => f.filename));
+                const newUploads = data.images.filter(f => !oldFilenames.has(f.filename));
+                if (newUploads.length > 0 && bufferList.length > 0) {
+                    // 只在非初始載入時計算（bufferList.length > 0）
+                    sessionStats.uploaded += newUploads.length;
+                    updateStatsDisplay();
+                }
+
                 bufferList = data.images;
                 renderBufferList();
                 document.getElementById('stats-buffer').innerText = `Inbox: ${bufferList.length}`;
@@ -364,9 +534,50 @@
         // --- Selection Logic ---
         function selectRow(filename, event) {
             currentFile = filename;
+            focusIndex = bufferList.findIndex(f => f.filename === filename);
             resetExposure();
             loadEditor(filename);
             renderBufferList();
+        }
+
+        function selectByIndex(index) {
+            if (index < 0 || index >= bufferList.length) return;
+            const file = bufferList[index];
+            currentFile = file.filename;
+            focusIndex = index;
+            resetExposure();
+            loadEditor(file.filename);
+            renderBufferList();
+
+            // 自動滾動到可見範圍
+            const rows = document.querySelectorAll('#buffer-table-body tr');
+            if (rows[index]) {
+                rows[index].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
+        }
+
+        function extendSelection(toIndex) {
+            if (toIndex < 0 || toIndex >= bufferList.length) return;
+
+            // 加入當前焦點到選擇
+            if (focusIndex >= 0 && focusIndex < bufferList.length) {
+                selectedFiles.add(bufferList[focusIndex].filename);
+            }
+
+            // 加入目標到選擇
+            selectedFiles.add(bufferList[toIndex].filename);
+
+            // 移動焦點但保持選擇
+            focusIndex = toIndex;
+            currentFile = bufferList[toIndex].filename;
+            loadEditor(currentFile);
+            renderBufferList();
+
+            // 自動滾動
+            const rows = document.querySelectorAll('#buffer-table-body tr');
+            if (rows[toIndex]) {
+                rows[toIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+            }
         }
 
         function toggleSelection(filename, checked) {
@@ -388,13 +599,22 @@
         function updateBatchBar() {
             const bar = document.getElementById('batch-bar');
             const count = document.getElementById('selected-count');
+            const deselectBtn = document.getElementById('btn-deselect');
 
             if (selectedFiles.size > 0) {
                 bar.classList.remove('hidden');
+                deselectBtn.classList.remove('hidden');
                 count.innerText = `${selectedFiles.size} selected`;
             } else {
                 bar.classList.add('hidden');
+                deselectBtn.classList.add('hidden');
             }
+        }
+
+        function deselectAll() {
+            selectedFiles.clear();
+            document.getElementById('select-all').checked = false;
+            renderBufferList();
         }
 
         // --- Workspace Logic ---
@@ -416,17 +636,45 @@
             dock.classList.add('opacity-100');
         }
 
-        function updateExposurePreview() {
-            const val = document.getElementById('exp-slider').value;
-            currentExposure = parseFloat(val);
-            document.getElementById('exp-val').innerText = currentExposure > 0 ? `+${currentExposure}` : currentExposure;
+        function updatePreview() {
+            // Read all values
+            currentExposure = parseFloat(document.getElementById('exp-slider').value);
+            currentStraighten = parseFloat(document.getElementById('straighten-slider').value);
+            currentScale = parseFloat(document.getElementById('scale-slider').value);
+
+            // Update value displays
+            document.getElementById('exp-val').innerText = currentExposure > 0 ? `+${currentExposure.toFixed(1)}` : currentExposure.toFixed(1);
+            document.getElementById('straighten-val').innerText = `${currentStraighten > 0 ? '+' : ''}${currentStraighten}°`;
+            document.getElementById('scale-val').innerText = `${Math.round(currentScale * 100)}%`;
+            document.getElementById('rotate-val').innerText = `${currentRotation}°`;
+
+            // Apply transforms to preview
             const brightness = Math.pow(2, currentExposure);
-            document.getElementById('preview-img').style.filter = `brightness(${brightness})`;
+            const totalRotation = currentRotation + currentStraighten;
+            const img = document.getElementById('preview-img');
+            img.style.filter = `brightness(${brightness})`;
+            img.style.transform = `rotate(${totalRotation}deg) scale(${currentScale})`;
         }
 
-        function resetExposure() {
+        function rotate(deg) {
+            currentRotation = (currentRotation + deg + 360) % 360;
+            updatePreview();
+        }
+
+        function resetAllTransforms() {
             document.getElementById('exp-slider').value = 0;
-            updateExposurePreview();
+            document.getElementById('straighten-slider').value = 0;
+            document.getElementById('scale-slider').value = 1;
+            currentRotation = 0;
+            currentExposure = 0;
+            currentStraighten = 0;
+            currentScale = 1.0;
+            updatePreview();
+        }
+
+        // Alias for backward compatibility
+        function resetExposure() {
+            resetAllTransforms();
         }
 
         // --- Actions ---
@@ -437,19 +685,25 @@
                 const res = await fetch('/api/publish', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: currentFile, exposure: currentExposure })
+                    body: JSON.stringify({
+                        filename: currentFile,
+                        exposure: currentExposure,
+                        rotation: currentRotation,
+                        straighten: currentStraighten,
+                        scale: currentScale
+                    })
                 });
                 if (res.ok) {
                     showToast('✅ Published');
+                    sessionStats.published++;
+                    updateStatsDisplay();
                     fetchLive();
-                    // Optional: remove directly to feel faster
                 }
             } catch (e) { console.error(e); }
         }
 
         async function archiveCurrent() {
             if (!currentFile) return;
-            // if(!confirm('Archive?')) return; // Make it faster by removing confirm for archive
 
             try {
                 const res = await fetch('/api/archive', {
@@ -459,6 +713,8 @@
                 });
                 if (res.ok) {
                     showToast('📦 Archived');
+                    sessionStats.archived++;
+                    updateStatsDisplay();
                     bufferList = bufferList.filter(f => f.filename !== currentFile);
                     selectedFiles.delete(currentFile);
                     currentFile = null;
@@ -468,6 +724,57 @@
                     renderBufferList();
                 }
             } catch (e) { console.error(e); }
+        }
+
+        async function deleteCurrent() {
+            if (!currentFile) return;
+            if (!confirm(`確定要刪除 ${currentFile}？\n檔案將移至回收桶。`)) return;
+
+            try {
+                const res = await fetch('/api/reject', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename: currentFile })
+                });
+                if (res.ok) {
+                    showToast('🗑 已刪除');
+                    sessionStats.deleted++;
+                    updateStatsDisplay();
+                    bufferList = bufferList.filter(f => f.filename !== currentFile);
+                    selectedFiles.delete(currentFile);
+                    currentFile = null;
+                    document.getElementById('preview-img').classList.add('hidden');
+                    document.getElementById('empty-state').classList.remove('hidden');
+                    document.getElementById('editor-dock').classList.add('opacity-50', 'pointer-events-none');
+                    renderBufferList();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function batchDelete() {
+            const files = Array.from(selectedFiles);
+            if (files.length === 0) return;
+            if (!confirm(`確定要刪除 ${files.length} 張照片？\n檔案將移至回收桶。`)) return;
+
+            showToast(`⏳ 刪除中 ${files.length}...`);
+            let success = 0;
+            for (const fname of files) {
+                try {
+                    const res = await fetch('/api/reject', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: fname })
+                    });
+                    if (res.ok) success++;
+                } catch (e) { console.error(e); }
+            }
+
+            showToast(`🗑 已刪除 ${success} 張`);
+            sessionStats.deleted += success;
+            updateStatsDisplay();
+            selectedFiles.clear();
+            document.getElementById('select-all').checked = false;
+            fetchBuffer();
         }
 
         async function batchPublish() {
@@ -484,6 +791,8 @@
                 });
                 if (res.ok) {
                     showToast('✅ Batch Complete');
+                    sessionStats.published += files.length;
+                    updateStatsDisplay();
                     selectedFiles.clear();
                     document.getElementById('select-all').checked = false;
                     renderBufferList();
@@ -573,6 +882,74 @@
             t.classList.remove('-translate-y-20', 'opacity-0');
             setTimeout(() => t.classList.add('-translate-y-20', 'opacity-0'), 3000);
         }
+
+        // --- Keyboard Navigation ---
+        document.addEventListener('keydown', (e) => {
+            // 如果正在輸入文字則不處理
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // 上下鍵導航
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                e.preventDefault();
+
+                if (bufferList.length === 0) return;
+
+                // 如果還沒選擇任何項目，從第一個開始
+                if (focusIndex === -1) {
+                    selectByIndex(0);
+                    return;
+                }
+
+                const direction = e.key === 'ArrowUp' ? -1 : 1;
+                const newIndex = focusIndex + direction;
+
+                if (newIndex >= 0 && newIndex < bufferList.length) {
+                    if (e.shiftKey) {
+                        // Shift + 方向鍵：延伸選擇
+                        extendSelection(newIndex);
+                    } else {
+                        // 單純方向鍵：移動焦點
+                        selectByIndex(newIndex);
+                    }
+                }
+            }
+
+            // Enter 鍵發布
+            if (e.key === 'Enter' && currentFile) {
+                e.preventDefault();
+                publishCurrent();
+            }
+
+            // Delete/Backspace 鍵刪除
+            if ((e.key === 'Delete' || e.key === 'Backspace') && currentFile) {
+                e.preventDefault();
+                deleteCurrent();
+            }
+
+            // Space 鍵切換選擇
+            if (e.key === ' ' && currentFile) {
+                e.preventDefault();
+                if (selectedFiles.has(currentFile)) {
+                    selectedFiles.delete(currentFile);
+                } else {
+                    selectedFiles.add(currentFile);
+                }
+                renderBufferList();
+            }
+
+            // Escape 取消選擇
+            if (e.key === 'Escape') {
+                deselectAll();
+            }
+
+            // Ctrl/Cmd + A 全選
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                bufferList.forEach(f => selectedFiles.add(f.filename));
+                document.getElementById('select-all').checked = true;
+                renderBufferList();
+            }
+        });
 
         // Init
         fetchBuffer();
