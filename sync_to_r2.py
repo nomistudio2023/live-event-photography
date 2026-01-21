@@ -111,10 +111,46 @@ def delete_photo_from_r2(photo_name):
         return False
 
 
+def get_r2_photo_times():
+    """取得 R2 上照片的修改時間"""
+    try:
+        result = subprocess.run(
+            ["rclone", "lsl", f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/"],
+            capture_output=True,
+            text=True,
+            timeout=30
+        )
+        if result.returncode == 0:
+            photo_times = {}
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+                # rclone lsl format: "   size YYYY-MM-DD HH:MM:SS.NNNNNN filename"
+                parts = line.split()
+                if len(parts) >= 4:
+                    filename = parts[-1]
+                    if any(filename.lower().endswith(ext) for ext in PHOTO_EXTENSIONS):
+                        # 使用日期時間字串作為排序依據
+                        date_str = parts[1] + " " + parts[2]
+                        photo_times[filename] = date_str
+            return photo_times
+        return {}
+    except Exception as e:
+        print(f"⚠️  無法取得 R2 照片時間: {e}")
+        return {}
+
+
 def update_r2_manifest(photos):
-    """更新 R2 上的 manifest.json"""
-    # 建立 manifest 內容 (按檔名排序，最新的在前面)
-    sorted_photos = sorted(list(photos), reverse=True)
+    """更新 R2 上的 manifest.json - 按上傳時間排序（最新在前）"""
+    # 取得照片的修改時間
+    photo_times = get_r2_photo_times()
+
+    # 按時間排序（最新的在前面），沒有時間資訊的放最後
+    sorted_photos = sorted(
+        list(photos),
+        key=lambda p: photo_times.get(p, "0000-00-00 00:00:00"),
+        reverse=True
+    )
     manifest_content = json.dumps(sorted_photos, ensure_ascii=False, indent=2)
 
     # 寫入本地暫存檔
