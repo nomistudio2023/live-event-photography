@@ -185,8 +185,12 @@ def main():
         missing_in_r2 = previous_local - r2_photos
         extra_in_r2 = r2_photos - previous_local
 
+        if extra_in_r2 and SAFE_MODE:
+            print(f"\n📌 R2 有 {len(extra_in_r2)} 張照片不在本地")
+            print("   🔒 安全模式：這些照片會保留在 R2")
+
         if missing_in_r2:
-            print(f"\n⚠️  發現 {len(missing_in_r2)} 張照片尚未同步到 R2")
+            print(f"\n⚠️  發現 {len(missing_in_r2)} 張本地照片尚未同步到 R2")
             print("   正在上傳...")
             for photo in missing_in_r2:
                 if sync_photo_to_r2(photo):
@@ -194,9 +198,14 @@ def main():
                 else:
                     print(f"   ❌ {photo}")
 
-            # 更新 manifest
-            update_r2_manifest(previous_local)
-            print("   📋 Manifest 已更新")
+            # 更新 manifest (安全模式從 R2 取得列表)
+            if SAFE_MODE:
+                actual_r2 = get_r2_photos()
+                update_r2_manifest(actual_r2)
+                print(f"   📋 Manifest 已更新 (R2: {len(actual_r2)} 張)")
+            else:
+                update_r2_manifest(previous_local)
+                print("   📋 Manifest 已更新")
 
     print("\n🔍 開始監控變化...\n")
 
@@ -233,8 +242,14 @@ def main():
                                 print(f"   ❌ 刪除失敗: {photo}")
 
                 # 更新 manifest
-                if update_r2_manifest(current_local):
-                    print(f"   📋 Manifest 已更新 ({len(current_local)} 張照片)")
+                if SAFE_MODE:
+                    # 安全模式：從 R2 取得實際照片列表來更新 manifest
+                    actual_r2_photos = get_r2_photos()
+                    if update_r2_manifest(actual_r2_photos):
+                        print(f"   📋 Manifest 已更新 (R2: {len(actual_r2_photos)} 張)")
+                else:
+                    if update_r2_manifest(current_local):
+                        print(f"   📋 Manifest 已更新 ({len(current_local)} 張照片)")
 
                 previous_local = current_local
                 print()
