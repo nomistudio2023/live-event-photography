@@ -105,13 +105,14 @@
         }
 
         .featured-photo {
-            width: 100%;
+            max-width: 100%;
             max-width: 1000px;
             border-radius: 12px;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
             max-height: 80vh;
-            object-fit: contain;
-            background-color: var(--card-bg);
+            width: auto;
+            height: auto;
+            /* 移除 object-fit 和 background-color，讓邊框貼合照片 */
             transition: transform 0.3s ease;
             cursor: zoom-in;
         }
