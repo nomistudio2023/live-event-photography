@@ -494,8 +494,9 @@
     </div>
 
     <script>
-        const MANIFEST_URL = 'photos_web/manifest.json';
-        const IMAGE_BASE_URL = 'photos_web/';
+        // R2 Storage via Cloudflare Function - Updated 2026-01-21
+        const MANIFEST_URL = '/photo/2026-01-20/manifest.json';
+        const IMAGE_BASE_URL = '/photo/2026-01-20/';
 
         let allPhotos = []; // Store full list for navigation
         let currentPhotoIndex = 0;
