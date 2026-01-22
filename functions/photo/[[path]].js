@@ -23,7 +23,14 @@ export async function onRequest(context) {
     // Return the object with appropriate headers
     const headers = new Headers();
     headers.set('Content-Type', object.httpMetadata?.contentType || 'image/jpeg');
-    headers.set('Cache-Control', 'public, max-age=31536000');
+
+    // Use short cache for manifest.json so new photos appear quickly
+    // Use long cache for images since they don't change
+    if (path === 'manifest.json') {
+      headers.set('Cache-Control', 'public, max-age=5');
+    } else {
+      headers.set('Cache-Control', 'public, max-age=31536000');
+    }
     headers.set('Access-Control-Allow-Origin', '*');
     headers.set('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
 
