@@ -138,8 +138,13 @@ class ImageProcessor:
 
                 # 3. Straighten (fine angle adjustment with proper crop)
                 if straighten != 0:
-                    # Rotate with expand to avoid cutting corners
-                    img = img.rotate(straighten, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=(0,0,0))
+                    # PIL rotate() is counter-clockwise, but CSS rotate() is clockwise
+                    # Negate the angle to match preview direction
+                    pil_angle = -straighten
+                    logger.info(f"   🔄 Applying straighten: {straighten}° (PIL angle: {pil_angle}°)")
+                    logger.info(f"      Before rotate: {img.width}x{img.height}")
+                    img = img.rotate(pil_angle, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=(0,0,0))
+                    logger.info(f"      After rotate: {img.width}x{img.height}")
 
                     # Calculate the largest inscribed rectangle after rotation
                     # to crop out the black edges
@@ -172,7 +177,9 @@ class ImageProcessor:
                     right = left + new_w
                     bottom = top + new_h
 
+                    logger.info(f"      Crop: ({left},{top}) to ({right},{bottom}) -> {new_w}x{new_h}")
                     img = img.crop((left, top, right, bottom))
+                    logger.info(f"      After crop: {img.width}x{img.height}")
 
                 # 4. Scale (zoom) - crop from center when zooming in
                 if scale != 1.0 and scale > 0.5:
@@ -274,9 +281,37 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Custom endpoint for live images with no-cache headers
+@app.get("/live/{filename:path}")
+async def serve_live_image(filename: str):
+    """Serve live images with no-cache headers to ensure updates are visible"""
+    from fastapi.responses import Response
+    import time
+
+    file_path = os.path.join(CONFIG["web_folder"], filename)
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Image not found")
+
+    # Read file content directly to bypass FileResponse caching
+    with open(file_path, "rb") as f:
+        content = f.read()
+
+    # Use current timestamp as ETag to force browser to fetch fresh content
+    etag = f'"{int(time.time() * 1000)}"'
+
+    return Response(
+        content=content,
+        media_type="image/jpeg",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+            "ETag": etag
+        }
+    )
+
 # Static Mounts
 app.mount("/raw", StaticFiles(directory=CONFIG["buffer_folder"]), name="raw")
-app.mount("/live", StaticFiles(directory=CONFIG["web_folder"]), name="live")
 # Mount photos_web to match the path expected by index.html
 app.mount("/photos_web", StaticFiles(directory=CONFIG["web_folder"]), name="photos_web")
 app.mount("/assets", StaticFiles(directory=CONFIG["assets_folder"]), name="assets")
@@ -363,6 +398,30 @@ async def get_buffer_images():
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+@app.get("/api/status")
+async def get_system_status():
+    """Get system status including sync script status"""
+    import subprocess
+
+    # Check if sync_to_r2.py is running
+    sync_running = False
+    try:
+        result = subprocess.run(
+            ["pgrep", "-f", "sync_to_r2.py"],
+            capture_output=True, text=True, timeout=2
+        )
+        sync_running = result.returncode == 0
+    except:
+        pass
+
+    return {
+        "server": True,  # If this endpoint responds, server is running
+        "sync": sync_running,
+        "web_folder": CONFIG["web_folder"],
+        "buffer_folder": CONFIG["buffer_folder"]
+    }
+
+
 @app.get("/api/live")
 async def get_live_images():
     """List images in Web Public folder with metadata"""
@@ -393,13 +452,58 @@ async def get_live_images():
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
 
+def get_next_publish_filename(base_name: str, web_folder: str) -> str:
+    """
+    Generate sequential filename for multiple publishes of the same source.
+    First publish: 15D_7109.jpg
+    Second publish: 15D_7109_002.jpg
+    Third publish: 15D_7109_003.jpg
+    """
+    import re
+
+    # Check existing files with same base name
+    existing_files = []
+    for f in os.listdir(web_folder):
+        if f.lower().endswith(('.jpg', '.jpeg')):
+            # Match base_name or base_name_NNN pattern
+            if f == f"{base_name}.jpg" or f.startswith(f"{base_name}_"):
+                existing_files.append(f)
+
+    if not existing_files:
+        # First publish - use original name
+        return f"{base_name}.jpg"
+
+    # Find highest sequence number
+    max_seq = 1  # Original file counts as 001
+    for f in existing_files:
+        if f == f"{base_name}.jpg":
+            continue  # Original file
+        # Extract sequence number from pattern like base_name_002.jpg
+        match = re.search(rf'{re.escape(base_name)}_(\d{{3}})\.jpg', f)
+        if match:
+            seq = int(match.group(1))
+            max_seq = max(max_seq, seq)
+
+    # Generate next sequence
+    next_seq = max_seq + 1
+    return f"{base_name}_{next_seq:03d}.jpg"
+
+
 @app.post("/api/publish")
 async def publish_image(req: PublishRequest):
     """Action: Buffer -> Process -> Web"""
     try:
         source_path = os.path.join(CONFIG["buffer_folder"], req.filename)
         name, ext = os.path.splitext(req.filename)
-        dest_path = os.path.join(CONFIG["web_folder"], name + ".jpg") # Ensure .jpg for web
+
+        # Generate sequential filename if same source published multiple times
+        dest_filename = get_next_publish_filename(name, CONFIG["web_folder"])
+        dest_path = os.path.join(CONFIG["web_folder"], dest_filename)
+
+        # Debug log to verify parameters
+        logger.info(f"📥 Publish request: {req.filename}")
+        logger.info(f"   └─ Exposure={req.exposure}, Rotation={req.rotation}, Straighten={req.straighten}, Scale={req.scale}")
+        logger.info(f"   └─ Output: {dest_filename}")
 
         processor.process_image(
             source_path, dest_path,
@@ -409,11 +513,19 @@ async def publish_image(req: PublishRequest):
             scale=req.scale
         )
 
-        # Update History
+        # Verify file was written
+        if os.path.exists(dest_path):
+            new_size = os.path.getsize(dest_path)
+            logger.info(f"   ✅ File saved: {dest_filename} ({new_size/1024:.1f}KB)")
+        else:
+            logger.error(f"   ❌ File NOT found after save: {dest_path}")
+
+        # Update History (track source filename)
         update_history(req.filename, "publish")
 
         update_manifest()
-        return {"status": "success", "filename": req.filename}
+        # Return both source and published filename
+        return {"status": "success", "filename": req.filename, "published_as": dest_filename}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

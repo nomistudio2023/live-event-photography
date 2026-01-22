@@ -94,6 +94,11 @@
                 <span class="text-gray-600">|</span>
                 <span class="text-green-400">🚀 <span id="stats-published">0</span></span>
             </div>
+            <!-- Sync Status Indicator -->
+            <div id="sync-status" class="flex items-center gap-1.5 bg-gray-800 px-3 py-1.5 rounded border border-gray-700" title="R2 同步狀態">
+                <span id="sync-indicator" class="w-2 h-2 rounded-full bg-gray-500"></span>
+                <span id="sync-text" class="text-gray-500 text-xs">Sync</span>
+            </div>
             <!-- Gallery Links Dropdown -->
             <div class="relative group">
                 <button class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
@@ -706,7 +711,9 @@
                     })
                 });
                 if (res.ok) {
-                    showToast('✅ Published');
+                    const result = await res.json();
+                    const publishedName = result.published_as || result.filename;
+                    showToast(`✅ ${publishedName}`);
                     sessionStats.published++;
                     updateStatsDisplay();
                     fetchLive();
@@ -963,12 +970,36 @@
             }
         });
 
+        // Check sync status
+        async function checkSyncStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                const indicator = document.getElementById('sync-indicator');
+                const text = document.getElementById('sync-text');
+
+                if (data.sync) {
+                    indicator.className = 'w-2 h-2 rounded-full bg-green-500 animate-pulse';
+                    text.className = 'text-green-400 text-xs';
+                    text.textContent = 'Syncing';
+                } else {
+                    indicator.className = 'w-2 h-2 rounded-full bg-yellow-500';
+                    text.className = 'text-yellow-400 text-xs';
+                    text.textContent = 'Offline';
+                }
+            } catch (e) {
+                // Server might be down
+            }
+        }
+
         // Init
         fetchBuffer();
         fetchLive();
+        checkSyncStatus();
 
         setInterval(fetchBuffer, 4000);
         setInterval(fetchLive, 5000);
+        setInterval(checkSyncStatus, 10000); // Check sync status every 10 seconds
 
     </script>
 </body>
