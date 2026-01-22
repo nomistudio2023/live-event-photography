@@ -107,7 +107,14 @@ class ImageProcessor:
                        rotation: int = 0, straighten: float = 0.0, scale: float = 1.0):
         """
         Applies edits (exposure, rotation, straighten, scale) and watermark to an image and saves it.
+
+        Args:
+            rotation: 90° increments (0, 90, 180, 270)
+            straighten: Fine angle adjustment (-5 to +5 degrees), will crop to remove black edges
+            scale: Zoom level (1.0 = 100%, >1.0 = zoom in with center crop)
         """
+        import math
+
         if not os.path.exists(source_path):
             raise FileNotFoundError(f"Source file not found: {source_path}")
 
@@ -126,24 +133,61 @@ class ImageProcessor:
                 elif rotation == 270:
                     img = img.transpose(Image.Transpose.ROTATE_90)
 
-                # 3. Straighten (fine angle adjustment)
-                total_angle = straighten
-                if total_angle != 0:
-                    # Expand to avoid black corners, then crop back
-                    img = img.rotate(total_angle, resample=Image.Resampling.BICUBIC, expand=True)
+                # Store original dimensions after 90° rotation
+                orig_w, orig_h = img.width, img.height
 
-                # 4. Scale (zoom)
-                if scale != 1.0:
-                    new_width = int(img.width * scale)
-                    new_height = int(img.height * scale)
-                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                # 3. Straighten (fine angle adjustment with proper crop)
+                if straighten != 0:
+                    # Rotate with expand to avoid cutting corners
+                    img = img.rotate(straighten, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=(0,0,0))
 
-                    # Center crop if scaled up, or keep as is if scaled down
+                    # Calculate the largest inscribed rectangle after rotation
+                    # to crop out the black edges
+                    angle_rad = abs(math.radians(straighten))
+                    cos_a = math.cos(angle_rad)
+                    sin_a = math.sin(angle_rad)
+
+                    # For small angles, calculate crop dimensions
+                    # The inscribed rectangle formula for rotated image
+                    if orig_w > orig_h:
+                        # Landscape
+                        new_w = int(orig_w * cos_a - orig_h * sin_a)
+                        new_h = int(orig_h * cos_a - orig_w * sin_a)
+                    else:
+                        # Portrait
+                        new_w = int(orig_w * cos_a - orig_h * sin_a)
+                        new_h = int(orig_h * cos_a - orig_w * sin_a)
+
+                    # Ensure positive dimensions (use simpler formula for small angles)
+                    # For angles < 10°, approximate: crop factor ≈ 1 - tan(angle) * aspect_adjustment
+                    crop_factor = cos_a - sin_a * min(orig_w/orig_h, orig_h/orig_w)
+                    crop_factor = max(0.8, min(1.0, crop_factor))  # Clamp to reasonable range
+
+                    new_w = int(orig_w * crop_factor)
+                    new_h = int(orig_h * crop_factor)
+
+                    # Center crop
+                    left = (img.width - new_w) // 2
+                    top = (img.height - new_h) // 2
+                    right = left + new_w
+                    bottom = top + new_h
+
+                    img = img.crop((left, top, right, bottom))
+
+                # 4. Scale (zoom) - crop from center when zooming in
+                if scale != 1.0 and scale > 0.5:
                     if scale > 1.0:
-                        # Crop to original aspect ratio from center
-                        left = (new_width - img.width // scale) // 2
-                        top = (new_height - img.height // scale) // 2
-                        # Keep the scaled size for now - user expects zoomed result
+                        # Zoom in: crop a smaller region from center
+                        crop_w = int(img.width / scale)
+                        crop_h = int(img.height / scale)
+                        left = (img.width - crop_w) // 2
+                        top = (img.height - crop_h) // 2
+                        right = left + crop_w
+                        bottom = top + crop_h
+                        img = img.crop((left, top, right, bottom))
+                    else:
+                        # Zoom out (scale < 1.0): just resize smaller, will be handled by thumbnail later
+                        pass
 
                 # 5. Exposure Compensation
                 brightness_factor = 2 ** exposure

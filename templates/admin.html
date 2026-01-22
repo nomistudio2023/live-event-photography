@@ -94,10 +94,22 @@
                 <span class="text-gray-600">|</span>
                 <span class="text-green-400">🚀 <span id="stats-published">0</span></span>
             </div>
-            <a href="/gallery" target="_blank"
-                class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
-                <span>↗</span> Open Gallery
-            </a>
+            <!-- Gallery Links Dropdown -->
+            <div class="relative group">
+                <button class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
+                    <span>↗</span> Open Gallery <span class="text-gray-500 ml-1">▾</span>
+                </button>
+                <div class="absolute right-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <a href="/gallery" target="_blank"
+                        class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-t-lg">
+                        🖥️ 本地預覽
+                    </a>
+                    <a href="https://live-event-photography.pages.dev" target="_blank"
+                        class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-b-lg border-t border-gray-700">
+                        🌐 線上活動頁
+                    </a>
+                </div>
+            </div>
             <div class="h-4 w-px bg-gray-700 mx-2"></div>
             <span id="stats-buffer">Inbox: 0</span>
             <span class="text-gray-600">|</span>
