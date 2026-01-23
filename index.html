@@ -57,12 +57,14 @@
             margin-bottom: 0.5rem;
             text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
             letter-spacing: 2px;
+            font-family: Arial, sans-serif;
         }
 
         .hero-content p {
             font-size: 1.2rem;
             color: #ddd;
             font-weight: 300;
+            font-family: Arial, sans-serif;
         }
 
         /* Container */
@@ -446,10 +448,10 @@
 
 <body>
 
-    <header class="hero">
+    <header class="hero" id="hero-section">
         <div class="hero-content">
-            <h1>LIVE EVENT 2026</h1>
-            <p>即時活動花絮・精彩瞬間</p>
+            <h1 id="event-title">LIVE EVENT 2026</h1>
+            <p id="event-subtitle">即時活動花絮・精彩瞬間</p>
         </div>
     </header>
 
@@ -496,10 +498,54 @@
     <script>
         const MANIFEST_URL = 'photos_web/manifest.json';
         const IMAGE_BASE_URL = 'photos_web/';
+        const EVENT_SETTINGS_URL = '/api/event-settings';
 
         let allPhotos = []; // Store full list for navigation
         let currentPhotoIndex = 0;
         let isLightboxOpen = false;
+
+        // Load event settings
+        async function loadEventSettings() {
+            try {
+                const response = await fetch(`${EVENT_SETTINGS_URL}?t=${new Date().getTime()}`);
+                if (response.ok) {
+                    const settings = await response.json();
+                    const titleEl = document.getElementById('event-title');
+                    const subtitleEl = document.getElementById('event-subtitle');
+                    
+                    titleEl.textContent = settings.event_title || 'LIVE EVENT 2026';
+                    subtitleEl.textContent = settings.event_subtitle || '即時活動花絮・精彩瞬間';
+                    
+                    // Apply font settings
+                    if (settings.title_font_family) {
+                        titleEl.style.fontFamily = settings.title_font_family;
+                    }
+                    if (settings.title_font_size) {
+                        titleEl.style.fontSize = `${settings.title_font_size}px`;
+                    }
+                    if (settings.subtitle_font_family) {
+                        subtitleEl.style.fontFamily = settings.subtitle_font_family;
+                    }
+                    if (settings.subtitle_font_size) {
+                        subtitleEl.style.fontSize = `${settings.subtitle_font_size}px`;
+                    }
+                    
+                    // Update hero background image (prefer uploaded, fallback to URL)
+                    const heroSection = document.getElementById('hero-section');
+                    const imageUrl = settings.hero_image_uploaded || settings.hero_image_url;
+                    if (imageUrl) {
+                        heroSection.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.8)), url('${imageUrl}')`;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load event settings:', e);
+            }
+        }
+
+        // Load event settings on page load
+        loadEventSettings();
+        // Reload event settings every 30 seconds
+        setInterval(loadEventSettings, 30000);
 
         async function fetchPhotos() {
             try {
@@ -583,7 +629,11 @@
                     featuredImg.parentElement.offsetHeight; /* trigger reflow */
                     featuredImg.parentElement.style.animation = 'fadeIn 0.5s ease';
                 };
-                img.src = IMAGE_BASE_URL + newestPhoto;
+                img.onerror = () => {
+                    console.error('Failed to load featured image:', newestPhoto);
+                    featuredSection.style.display = 'none';
+                };
+                img.src = IMAGE_BASE_URL + newestPhoto + '?t=' + new Date().getTime();
             }
 
             // 2. Handle Gallery (Masonry)
@@ -598,8 +648,9 @@
 
                 return `
                     <div class="gallery-item" onclick="openLightboxIndex(${index})">
-                        <img src="${IMAGE_BASE_URL}${photo}" 
+                        <img src="${IMAGE_BASE_URL}${photo}?t=${new Date().getTime()}" 
                              onload="this.classList.add('loaded')" 
+                             onerror="this.parentElement.style.display='none'; console.error('Failed to load image: ${photo}');"
                              alt="Event Photo ${index}">
                     </div>
                 `;

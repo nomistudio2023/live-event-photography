@@ -17,8 +17,31 @@ from pathlib import Path
 from datetime import datetime
 
 # ============ 配置區 ============
-# 本地照片資料夾
-LOCAL_PHOTOS_DIR = Path(__file__).parent / "photos_web"
+# 載入 config.json 以取得動態資料夾路徑
+def load_config():
+    """Load config from config.json, fallback to default"""
+    config_file = Path(__file__).parent / "config.json"
+    default_web_folder = Path(__file__).parent / "photos_web"
+    
+    if config_file.exists():
+        try:
+            with open(config_file, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                web_folder = config.get("web_folder", "./photos_web")
+                # Convert relative path to absolute
+                if web_folder.startswith("./"):
+                    web_folder = str(Path(__file__).parent / web_folder[2:])
+                elif not os.path.isabs(web_folder):
+                    web_folder = str(Path(__file__).parent / web_folder)
+                return Path(web_folder)
+        except Exception as e:
+            print(f"⚠️  無法讀取 config.json: {e}")
+    
+    return default_web_folder
+
+# 本地照片資料夾（從 config.json 讀取）
+LOCAL_PHOTOS_DIR = load_config()
+print(f"📂 使用資料夾: {LOCAL_PHOTOS_DIR}")
 
 # rclone 遠端名稱 (從 rclone config 取得)
 RCLONE_REMOTE = "r2livegallery"

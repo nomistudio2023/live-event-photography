@@ -99,6 +99,10 @@
                 <span id="sync-indicator" class="w-2 h-2 rounded-full bg-gray-500"></span>
                 <span id="sync-text" class="text-gray-500 text-xs">Sync</span>
             </div>
+            <!-- Settings Button -->
+            <button onclick="openSettingsModal()" class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-yellow-400 font-bold border border-gray-700" title="設定">
+                ⚙️ 設定
+            </button>
             <!-- Gallery Links Dropdown -->
             <div class="relative group">
                 <button class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
@@ -1001,7 +1005,504 @@
         setInterval(fetchLive, 5000);
         setInterval(checkSyncStatus, 10000); // Check sync status every 10 seconds
 
+        // --- Settings Modal ---
+        async function openSettingsModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('hidden');
+            
+            // Load current settings
+            await loadEventSettings();
+            await loadWatermarkSettings();
+            await loadFolderSettings();
+            await checkDeploymentStatus();
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        async function loadEventSettings() {
+            try {
+                const res = await fetch('/api/event-settings');
+                const data = await res.json();
+                document.getElementById('event-title-input').value = data.event_title || '';
+                document.getElementById('event-subtitle-input').value = data.event_subtitle || '';
+                document.getElementById('hero-image-url-input').value = data.hero_image_url || '';
+                document.getElementById('title-font-family-input').value = data.title_font_family || 'Arial, sans-serif';
+                document.getElementById('title-font-size-input').value = data.title_font_size || 56;
+                document.getElementById('subtitle-font-family-input').value = data.subtitle_font_family || 'Arial, sans-serif';
+                document.getElementById('subtitle-font-size-input').value = data.subtitle_font_size || 20;
+            } catch (e) {
+                console.error('Failed to load event settings:', e);
+            }
+        }
+
+        async function saveEventSettings() {
+            try {
+                const res = await fetch('/api/event-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event_title: document.getElementById('event-title-input').value,
+                        event_subtitle: document.getElementById('event-subtitle-input').value,
+                        hero_image_url: document.getElementById('hero-image-url-input').value,
+                        title_font_family: document.getElementById('title-font-family-input').value,
+                        title_font_size: parseInt(document.getElementById('title-font-size-input').value),
+                        subtitle_font_family: document.getElementById('subtitle-font-family-input').value,
+                        subtitle_font_size: parseInt(document.getElementById('subtitle-font-size-input').value)
+                    })
+                });
+                if (res.ok) {
+                    showToast('✅ 活動設定已儲存');
+                }
+            } catch (e) {
+                console.error('Failed to save event settings:', e);
+                showToast('❌ 儲存失敗');
+            }
+        }
+
+        async function uploadHeroImage() {
+            const fileInput = document.getElementById('hero-image-upload');
+            if (!fileInput.files || !fileInput.files[0]) {
+                showToast('❌ 請選擇圖片');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const res = await fetch('/api/upload-hero-image', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('✅ 背景圖片上傳成功');
+                    // Update URL input with uploaded image URL
+                    document.getElementById('hero-image-url-input').value = '';
+                    // Reload settings to show new image
+                    await loadEventSettings();
+                } else {
+                    showToast('❌ 上傳失敗: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error('Failed to upload hero image:', e);
+                showToast('❌ 上傳失敗');
+            }
+        }
+
+        async function uploadWatermarkImage() {
+            const fileInput = document.getElementById('watermark-image-upload');
+            if (!fileInput.files || !fileInput.files[0]) {
+                showToast('❌ 請選擇圖片');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            try {
+                const res = await fetch('/api/upload-watermark', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('✅ 浮水印圖片上傳成功');
+                    fileInput.value = ''; // Clear input
+                } else {
+                    showToast('❌ 上傳失敗: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error('Failed to upload watermark:', e);
+                showToast('❌ 上傳失敗');
+            }
+        }
+
+        async function loadWatermarkSettings() {
+            try {
+                const res = await fetch('/api/watermark-settings');
+                const data = await res.json();
+                document.getElementById('watermark-enabled').checked = data.enabled || false;
+                document.getElementById('watermark-type').value = data.type || 'image';
+                document.getElementById('watermark-text').value = data.text || '';
+                document.getElementById('watermark-font-size').value = data.text_font_size || 24;
+                document.getElementById('watermark-position').value = data.position || 'bottom-right';
+                document.getElementById('watermark-opacity').value = (data.opacity || 0.8) * 100;
+                document.getElementById('watermark-scale').value = data.scale_percentage || 20;
+                document.getElementById('watermark-margin').value = data.margin || 50;
+                updateWatermarkTypeUI();
+            } catch (e) {
+                console.error('Failed to load watermark settings:', e);
+            }
+        }
+
+        function updateWatermarkTypeUI() {
+            const type = document.getElementById('watermark-type').value;
+            const textGroup = document.getElementById('watermark-text-group');
+            const imageGroup = document.getElementById('watermark-image-group');
+            if (type === 'text') {
+                textGroup.classList.remove('hidden');
+                imageGroup.classList.add('hidden');
+            } else {
+                textGroup.classList.add('hidden');
+                imageGroup.classList.remove('hidden');
+            }
+        }
+
+        async function saveWatermarkSettings() {
+            try {
+                const res = await fetch('/api/watermark-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        enabled: document.getElementById('watermark-enabled').checked,
+                        type: document.getElementById('watermark-type').value,
+                        text: document.getElementById('watermark-text').value,
+                        text_font_size: parseInt(document.getElementById('watermark-font-size').value),
+                        position: document.getElementById('watermark-position').value,
+                        opacity: parseFloat(document.getElementById('watermark-opacity').value) / 100,
+                        scale_percentage: parseFloat(document.getElementById('watermark-scale').value),
+                        margin: parseInt(document.getElementById('watermark-margin').value),
+                        text_color: [255, 255, 255, 200]
+                    })
+                });
+                if (res.ok) {
+                    showToast('✅ 浮水印設定已儲存');
+                }
+            } catch (e) {
+                console.error('Failed to save watermark settings:', e);
+                showToast('❌ 儲存失敗');
+            }
+        }
+
+        async function loadFolderSettings() {
+            try {
+                const res = await fetch('/api/folder-settings');
+                const data = await res.json();
+                document.getElementById('buffer-folder-input').value = data.buffer_folder || '';
+                document.getElementById('web-folder-input').value = data.web_folder || '';
+                document.getElementById('trash-folder-input').value = data.trash_folder || '';
+                document.getElementById('archive-folder-input').value = data.archive_folder || '';
+            } catch (e) {
+                console.error('Failed to load folder settings:', e);
+            }
+        }
+
+        async function saveFolderSettings() {
+            try {
+                const res = await fetch('/api/folder-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        buffer_folder: document.getElementById('buffer-folder-input').value,
+                        web_folder: document.getElementById('web-folder-input').value,
+                        trash_folder: document.getElementById('trash-folder-input').value,
+                        archive_folder: document.getElementById('archive-folder-input').value
+                    })
+                });
+                if (res.ok) {
+                    showToast('✅ 資料夾設定已儲存，請重啟服務器');
+                }
+            } catch (e) {
+                console.error('Failed to save folder settings:', e);
+                showToast('❌ 儲存失敗');
+            }
+        }
+
+        function selectFolder(inputId) {
+            // Note: Browser security prevents direct folder selection
+            // User needs to manually enter the path
+            const input = document.getElementById(inputId);
+            const currentPath = input.value || '';
+            const newPath = prompt('請輸入資料夾路徑（完整路徑）:', currentPath);
+            if (newPath) {
+                input.value = newPath;
+            }
+        }
+
+        function restartServer() {
+            if (confirm('確定要重啟服務器嗎？這會中斷當前連接。')) {
+                showToast('⚠️ 請手動重啟服務器（停止並重新運行 server.py）');
+                // Note: 無法從瀏覽器直接重啟服務器，需要用戶手動操作
+            }
+        }
+
+        function showServerInfo() {
+            const info = `
+服務器資訊：
+- 端口: 8000
+- Admin: http://localhost:8000
+- Gallery: http://localhost:8000/gallery
+
+重啟方式：
+1. 在 Terminal 中按 Ctrl+C 停止服務器
+2. 重新運行: python3 server.py
+或使用 Mac App 重啟
+            `;
+            alert(info);
+        }
+
+        async function checkDeploymentStatus() {
+            try {
+                const res = await fetch('/api/deployment-status');
+                const data = await res.json();
+                
+                const section = document.getElementById('deployment-section');
+                const badge = document.getElementById('deployment-status-badge');
+                
+                if (data.repo_exists) {
+                    section.classList.remove('hidden');
+                    
+                    if (data.has_changes) {
+                        badge.textContent = '有變更';
+                        badge.className = 'text-xs px-2 py-1 rounded bg-yellow-600 text-white';
+                    } else if (data.remote_status === 'ahead') {
+                        badge.textContent = '待推送';
+                        badge.className = 'text-xs px-2 py-1 rounded bg-orange-600 text-white';
+                    } else {
+                        badge.textContent = '已同步';
+                        badge.className = 'text-xs px-2 py-1 rounded bg-green-600 text-white';
+                    }
+                } else {
+                    section.classList.add('hidden');
+                }
+            } catch (e) {
+                console.error('Failed to check deployment status:', e);
+            }
+        }
+
+        function confirmDeploy() {
+            const message = `確定要部署到 Cloudflare 嗎？
+
+這將會：
+1. 複製 event_settings.json 到 GitHub 倉庫
+2. 提交變更到 Git
+3. 推送到 GitHub
+4. 觸發 Cloudflare Pages 自動部署（約 1-3 分鐘）
+
+⚠️ 請確保已設定 Git 認證（SSH key 或 Personal Access Token）`;
+            
+            if (confirm(message)) {
+                deployToCloudflare();
+            }
+        }
+
+        async function deployToCloudflare() {
+            const button = event.target;
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = '部署中...';
+            
+            try {
+                const res = await fetch('/api/deploy-to-cloudflare', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    if (data.status === 'success') {
+                        showToast('✅ ' + data.message);
+                        // Refresh deployment status after a delay
+                        setTimeout(checkDeploymentStatus, 2000);
+                    } else {
+                        showToast('ℹ️ ' + data.message);
+                    }
+                } else {
+                    const errorMsg = data.detail || 'Unknown error';
+                    showToast('❌ 部署失敗');
+                    
+                    // Show detailed error dialog
+                    let alertMsg = '部署失敗\n\n' + errorMsg;
+                    
+                    if (res.status === 401) {
+                        alertMsg += '\n\n請確保已設定：\n1. SSH key（推薦）\n2. 或 Personal Access Token\n\n詳細設定請參考 DEPLOYMENT_GUIDE.md';
+                    } else if (res.status === 404) {
+                        alertMsg += '\n\n請檢查：\n1. GitHub 倉庫路徑是否正確\n2. 倉庫是否存在';
+                    } else if (res.status === 400) {
+                        alertMsg += '\n\n請檢查 Git 設定';
+                    }
+                    
+                    alert(alertMsg);
+                }
+            } catch (e) {
+                console.error('Deployment failed:', e);
+                showToast('❌ 部署失敗: ' + e.message);
+                alert('部署失敗\n\n錯誤: ' + e.message + '\n\n請檢查：\n1. 網路連接\n2. Git 設定\n3. 服務器日誌');
+            } finally {
+                button.disabled = false;
+                button.textContent = originalText;
+            }
+        }
+
     </script>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div class="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+                <h2 class="text-xl font-bold text-white">⚙️ 系統設定</h2>
+                <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Event Settings -->
+                <section class="border-b border-gray-700 pb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">📋 活動頁面設定</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">活動標題</label>
+                            <input type="text" id="event-title-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="LIVE EVENT 2026">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">活動副標題</label>
+                            <input type="text" id="event-subtitle-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="即時活動花絮・精彩瞬間">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">標題字型</label>
+                            <input type="text" id="title-font-family-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2" placeholder="Arial, sans-serif">
+                            <label class="block text-sm text-gray-300 mb-1">標題字體大小 (px)</label>
+                            <input type="number" id="title-font-size-input" min="24" max="120" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">副標題字型</label>
+                            <input type="text" id="subtitle-font-family-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2" placeholder="Arial, sans-serif">
+                            <label class="block text-sm text-gray-300 mb-1">副標題字體大小 (px)</label>
+                            <input type="number" id="subtitle-font-size-input" min="12" max="48" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">背景圖片 URL</label>
+                            <input type="text" id="hero-image-url-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2" placeholder="https://...">
+                            <label class="block text-sm text-gray-300 mb-1">或上傳本地圖片</label>
+                            <input type="file" id="hero-image-upload" accept="image/*" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <button onclick="uploadHeroImage()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤 上傳背景圖片</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="saveEventSettings()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存活動設定</button>
+                            <button onclick="checkDeploymentStatus()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition" title="檢查部署狀態">🔍</button>
+                        </div>
+                        <!-- Deployment Section -->
+                        <div id="deployment-section" class="mt-4 p-4 bg-gray-700 rounded border border-gray-600 hidden">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold text-white">🌐 Cloudflare 部署</span>
+                                <span id="deployment-status-badge" class="text-xs px-2 py-1 rounded"></span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-3">將活動設定推送到 GitHub，觸發 Cloudflare Pages 自動部署</p>
+                            <button onclick="confirmDeploy()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition font-semibold">🚀 部署到 Cloudflare</button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Watermark Settings -->
+                <section class="border-b border-gray-700 pb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">💧 浮水印設定</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="watermark-enabled" class="rounded bg-gray-700 border-gray-600 text-blue-500">
+                            <label class="text-sm text-gray-300">啟用浮水印</label>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">浮水印類型</label>
+                            <select id="watermark-type" onchange="updateWatermarkTypeUI()" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                                <option value="image">圖片浮水印</option>
+                                <option value="text">文字浮水印</option>
+                            </select>
+                        </div>
+                        <div id="watermark-text-group" class="hidden">
+                            <label class="block text-sm text-gray-300 mb-1">浮水印文字</label>
+                            <input type="text" id="watermark-text" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="輸入浮水印文字">
+                            <label class="block text-sm text-gray-300 mb-1 mt-2">字體大小</label>
+                            <input type="number" id="watermark-font-size" min="12" max="72" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                        </div>
+                        <div id="watermark-image-group">
+                            <p class="text-xs text-gray-400 mb-2">圖片浮水印使用 assets/watermark.png</p>
+                            <label class="block text-sm text-gray-300 mb-1">上傳浮水印圖片 (PNG/JPG, 建議透明背景)</label>
+                            <input type="file" id="watermark-image-upload" accept="image/png,image/jpeg,image/jpg" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <button onclick="uploadWatermarkImage()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤 上傳浮水印</button>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">位置</label>
+                            <select id="watermark-position" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                                <option value="top-left">左上</option>
+                                <option value="top-center">中上</option>
+                                <option value="top-right">右上</option>
+                                <option value="center">中央</option>
+                                <option value="bottom-left">左下</option>
+                                <option value="bottom-center">中下</option>
+                                <option value="bottom-right">右下</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">透明度: <span id="opacity-value">80</span>%</label>
+                            <input type="range" id="watermark-opacity" min="0" max="100" value="80" oninput="document.getElementById('opacity-value').textContent = this.value" class="w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">大小: <span id="scale-value">20</span>%</label>
+                            <input type="range" id="watermark-scale" min="5" max="50" value="20" oninput="document.getElementById('scale-value').textContent = this.value" class="w-full">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">邊距: <span id="margin-value">50</span>px</label>
+                            <input type="range" id="watermark-margin" min="0" max="200" value="50" oninput="document.getElementById('margin-value').textContent = this.value" class="w-full">
+                        </div>
+                        <button onclick="saveWatermarkSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存浮水印設定</button>
+                    </div>
+                </section>
+
+                <!-- Server Control -->
+                <section class="border-b border-gray-700 pb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">🖥️ 服務器控制</h3>
+                    <div class="space-y-3">
+                        <div class="bg-gray-700 p-4 rounded border border-gray-600">
+                            <p class="text-sm text-gray-300 mb-3">服務器狀態管理</p>
+                            <div class="flex gap-2">
+                                <button onclick="restartServer()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition text-sm">🔄 重啟服務器</button>
+                                <button onclick="showServerInfo()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition text-sm">ℹ️ 服務器資訊</button>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-3">⚠️ 重啟服務器會中斷當前連接，請謹慎操作</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Folder Settings -->
+                <section>
+                    <h3 class="text-lg font-semibold text-white mb-4">📁 資料夾設定</h3>
+                    <p class="text-xs text-gray-400 mb-4">⚠️ 更改資料夾路徑後需要重啟服務器才能生效</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">Buffer 資料夾（拍攝照片輸入）</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="buffer-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_buffer">
+                                <button onclick="selectFolder('buffer-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">Web 資料夾（已發布照片）</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="web-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_web">
+                                <button onclick="selectFolder('web-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">Trash 資料夾（已刪除照片）</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="trash-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_trash">
+                                <button onclick="selectFolder('trash-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">Archive 資料夾（封存照片）</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="archive-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_archive">
+                                <button onclick="selectFolder('archive-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                            </div>
+                        </div>
+                        <button onclick="saveFolderSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存資料夾設定</button>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
