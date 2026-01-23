@@ -1244,6 +1244,30 @@
             alert(info);
         }
 
+        async function cleanupHiddenFiles() {
+            if (!confirm('確定要清理隱藏文件嗎？\n\n這會：\n1. 刪除所有 ._ 開頭的文件\n2. 重新生成 manifest.json')) {
+                return;
+            }
+            
+            try {
+                const res = await fetch('/api/cleanup-hidden-files', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                
+                if (res.ok) {
+                    showToast('✅ ' + data.message);
+                    // Refresh live feed to see updated manifest
+                    setTimeout(fetchLive, 1000);
+                } else {
+                    showToast('❌ 清理失敗: ' + (data.detail || 'Unknown error'));
+                }
+            } catch (e) {
+                console.error('Cleanup failed:', e);
+                showToast('❌ 清理失敗: ' + e.message);
+            }
+        }
+
         async function checkDeploymentStatus() {
             try {
                 const res = await fetch('/api/deployment-status');
@@ -1381,6 +1405,14 @@
                         <div class="flex gap-2">
                             <button onclick="saveEventSettings()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存活動設定</button>
                             <button onclick="checkDeploymentStatus()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition" title="檢查部署狀態">🔍</button>
+                        </div>
+                        <!-- Cleanup Section -->
+                        <div class="mt-4 p-4 bg-gray-700 rounded border border-gray-600">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-sm font-semibold text-white">🧹 清理工具</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mb-3">清理 macOS 隱藏文件（._ 開頭）並更新 manifest</p>
+                            <button onclick="cleanupHiddenFiles()" class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition font-semibold">🧹 清理隱藏文件</button>
                         </div>
                         <!-- Deployment Section -->
                         <div id="deployment-section" class="mt-4 p-4 bg-gray-700 rounded border border-gray-600 hidden">

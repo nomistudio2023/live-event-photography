@@ -13,6 +13,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from PIL import Image, ImageOps, ImageFilter, ImageEnhance, ImageDraw, ImageFont
 
+# 禁用 macOS 資源分叉（._ 文件）的產生
+# 這會影響 shutil.copy, shutil.copy2, 和 subprocess 中的複製操作
+os.environ['COPYFILE_DISABLE'] = '1'
+
 # Logger Setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -493,17 +497,34 @@ class FolderSettingsRequest(BaseModel):
 
 # Helpers
 def update_manifest():
-    """Generates manifest.json for the frontend"""
+    """Generates manifest.json for the frontend - with strict filtering and cleanup"""
     try:
         folder = CONFIG["web_folder"]
         if not os.path.exists(folder):
             logger.warning(f"Web folder does not exist: {folder}")
             return
         
+        # FIRST: Clean up any hidden files in the folder BEFORE reading
+        try:
+            cleanup_count = 0
+            for f in os.listdir(folder):
+                if f.startswith('._') or f == '.DS_Store':
+                    hidden_path = os.path.join(folder, f)
+                    try:
+                        os.remove(hidden_path)
+                        cleanup_count += 1
+                        logger.debug(f"Removed hidden file during manifest update: {f}")
+                    except:
+                        pass
+            if cleanup_count > 0:
+                logger.info(f"Cleaned {cleanup_count} hidden files before manifest update")
+        except:
+            pass
+        
         # Only include files that actually exist, are valid image files, and are readable
         files = []
         for f in os.listdir(folder):
-            # Skip macOS hidden files (._ prefix), .DS_Store, and manifest.json
+            # STRICT: Skip macOS hidden files (._ prefix), .DS_Store, and manifest.json
             if f.startswith('._') or f == '.DS_Store' or f == 'manifest.json':
                 continue
             
@@ -532,10 +553,13 @@ def update_manifest():
         # Sort by modification time (newest first)
         files.sort(key=lambda x: os.path.getmtime(os.path.join(folder, x)), reverse=True)
         
+        # FINAL VERIFICATION: ensure no hidden files slipped through (double check)
+        files = [f for f in files if not f.startswith('._') and f != '.DS_Store' and f != 'manifest.json']
+        
         manifest_path = os.path.join(folder, 'manifest.json')
         with open(manifest_path, 'w', encoding='utf-8') as f:
             json.dump(files, f, ensure_ascii=False, indent=2)
-        logger.info(f"Manifest updated: {len(files)} photos")
+        logger.info(f"Manifest updated: {len(files)} photos (hidden files filtered)")
     except Exception as e:
         logger.error(f"Manifest update failed: {e}")
 
@@ -729,7 +753,54 @@ async def publish_image(req: PublishRequest):
         # Update History (track source filename)
         update_history(req.filename, "publish")
 
+        # Clean up any hidden files that macOS might have created (BEFORE updating manifest)
+        try:
+            web_folder = CONFIG["web_folder"]
+            removed_count = 0
+            for f in os.listdir(web_folder):
+                if f.startswith('._') or f == '.DS_Store':
+                    hidden_path = os.path.join(web_folder, f)
+                    try:
+                        os.remove(hidden_path)
+                        removed_count += 1
+                        logger.info(f"   🧹 Removed hidden file: {f}")
+                    except Exception as e:
+                        logger.warning(f"   ⚠️  Failed to remove hidden file {f}: {e}")
+            if removed_count > 0:
+                logger.info(f"   ✅ Cleaned {removed_count} hidden files before manifest update")
+        except Exception as e:
+            logger.warning(f"Failed to clean hidden files: {e}")
+
+        # Update manifest (this will automatically filter out hidden files)
         update_manifest()
+        
+        # Double-check and force clean manifest (AFTER update)
+        manifest_path = os.path.join(CONFIG["web_folder"], "manifest.json")
+        if os.path.exists(manifest_path):
+            try:
+                with open(manifest_path, "r", encoding="utf-8") as f:
+                    manifest = json.load(f)
+                
+                # Remove hidden files and non-existent files
+                cleaned = []
+                for f in manifest:
+                    if f.startswith('._') or f == '.DS_Store' or f == 'manifest.json':
+                        continue
+                    # Verify file exists
+                    file_path = os.path.join(web_folder, f)
+                    if os.path.exists(file_path) and os.path.isfile(file_path):
+                        cleaned.append(f)
+                
+                hidden_in_manifest = [f for f in manifest if f.startswith('._')]
+                if hidden_in_manifest or len(cleaned) != len(manifest):
+                    logger.warning(f"⚠️  Manifest cleanup: removed {len(manifest) - len(cleaned)} items (hidden/non-existent)")
+                    # Save cleaned version
+                    with open(manifest_path, "w", encoding="utf-8") as f:
+                        json.dump(cleaned, f, ensure_ascii=False, indent=2)
+                    logger.info(f"✅ Manifest force-cleaned: {len(cleaned)} valid photos")
+            except Exception as e:
+                logger.error(f"Failed to verify manifest: {e}")
+        
         # Return both source and published filename
         return {"status": "success", "filename": req.filename, "published_as": dest_filename}
     except Exception as e:
@@ -1319,6 +1390,58 @@ async def deploy_to_cloudflare():
     except Exception as e:
         logger.error(f"Deployment failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=f"部署失敗: {str(e)}")
+
+@app.post("/api/cleanup-hidden-files")
+async def cleanup_hidden_files_api():
+    """Clean up hidden files and regenerate manifest"""
+    try:
+        web_folder = CONFIG["web_folder"]
+        removed_count = 0
+        removed_files = []
+        
+        # Remove hidden files
+        if os.path.exists(web_folder):
+            for f in os.listdir(web_folder):
+                if f.startswith('._') or f == '.DS_Store':
+                    hidden_path = os.path.join(web_folder, f)
+                    try:
+                        os.remove(hidden_path)
+                        removed_count += 1
+                        removed_files.append(f)
+                        logger.info(f"Removed hidden file: {f}")
+                    except Exception as e:
+                        logger.warning(f"Failed to remove {f}: {e}")
+        
+        # Regenerate manifest
+        update_manifest()
+        
+        # Verify manifest is clean
+        manifest_path = os.path.join(web_folder, "manifest.json")
+        if os.path.exists(manifest_path):
+            with open(manifest_path, "r", encoding="utf-8") as f:
+                manifest = json.load(f)
+            hidden_in_manifest = [f for f in manifest if f.startswith('._')]
+            if hidden_in_manifest:
+                cleaned = [f for f in manifest if not f.startswith('._') and f != '.DS_Store']
+                with open(manifest_path, "w", encoding="utf-8") as f:
+                    json.dump(cleaned, f, ensure_ascii=False, indent=2)
+                return {
+                    "status": "success",
+                    "message": f"已清理 {removed_count} 個隱藏文件，manifest 已更新（移除了 {len(hidden_in_manifest)} 個隱藏文件條目）",
+                    "removed_files": removed_files,
+                    "cleaned_manifest": True,
+                    "removed_from_manifest": len(hidden_in_manifest)
+                }
+        
+        return {
+            "status": "success",
+            "message": f"已清理 {removed_count} 個隱藏文件" if removed_count > 0 else "沒有發現隱藏文件",
+            "removed_files": removed_files,
+            "cleaned_manifest": False
+        }
+    except Exception as e:
+        logger.error(f"Cleanup failed: {e}")
+        raise HTTPException(status_code=500, detail=f"清理失敗: {str(e)}")
 
 if __name__ == "__main__":
     import uvicorn

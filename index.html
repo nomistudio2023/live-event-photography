@@ -1,4 +1,3 @@
-)
 <!DOCTYPE html>
 <html lang="zh-TW">
 
@@ -85,19 +84,6 @@
             font-size: 1.8rem;
             font-weight: 700;
             margin: 0;
-            position: relative;
-            padding-left: 1rem;
-        }
-
-        .section-title::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 10%;
-            height: 80%;
-            width: 4px;
-            background: var(--accent-color);
-            border-radius: 2px;
         }
 
         /* Featured (Newest) Photo */
@@ -496,8 +482,10 @@
     </div>
 
     <script>
-        const MANIFEST_URL = 'photos_web/manifest.json';
-        const IMAGE_BASE_URL = 'photos_web/';
+        // 自動檢測環境：本地開發或線上部署
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const MANIFEST_URL = isLocal ? 'photos_web/manifest.json' : '/photo/2026-01-20/manifest.json';
+        const IMAGE_BASE_URL = isLocal ? 'photos_web/' : '/photo/2026-01-20/';
         const EVENT_SETTINGS_URL = '/api/event-settings';
 
         let allPhotos = []; // Store full list for navigation

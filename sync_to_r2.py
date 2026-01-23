@@ -16,6 +16,9 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
+# 禁用 macOS 資源分叉（._ 文件）的產生
+os.environ['COPYFILE_DISABLE'] = '1'
+
 # ============ 配置區 ============
 # 載入 config.json 以取得動態資料夾路徑
 def load_config():
@@ -86,11 +89,12 @@ def get_r2_photos():
             timeout=30
         )
         if result.returncode == 0:
-            # 過濾出照片檔案 (排除 manifest.json)
+            # 過濾出照片檔案 (排除 manifest.json 和隱藏文件)
             files = result.stdout.strip().split('\n')
             photos = {
                 f for f in files
-                if f and any(f.lower().endswith(ext) for ext in PHOTO_EXTENSIONS)
+                if f and not f.startswith('._') and f != '.DS_Store' and f != 'manifest.json'
+                and any(f.lower().endswith(ext) for ext in PHOTO_EXTENSIONS)
             }
             return photos
         return set()
@@ -164,17 +168,27 @@ def get_r2_photo_times():
 
 
 def update_r2_manifest(photos):
-    """更新 R2 上的 manifest.json - 按上傳時間排序（最新在前）"""
+    """更新 R2 上的 manifest.json - 按上傳時間排序（最新在前），過濾隱藏文件"""
+    # 過濾掉隱藏文件（._ 開頭）和 .DS_Store
+    filtered_photos = {
+        p for p in photos
+        if not p.startswith('._') and p != '.DS_Store' and p != 'manifest.json'
+    }
+    
     # 取得照片的修改時間
     photo_times = get_r2_photo_times()
 
     # 按時間排序（最新的在前面），沒有時間資訊的放最後
     sorted_photos = sorted(
-        list(photos),
+        list(filtered_photos),
         key=lambda p: photo_times.get(p, "0000-00-00 00:00:00"),
         reverse=True
     )
-    manifest_content = json.dumps(sorted_photos, ensure_ascii=False, indent=2)
+    
+    # 再次驗證：確保沒有隱藏文件
+    final_photos = [p for p in sorted_photos if not p.startswith('._')]
+    
+    manifest_content = json.dumps(final_photos, ensure_ascii=False, indent=2)
 
     # 寫入本地暫存檔
     local_manifest = LOCAL_PHOTOS_DIR / "manifest.json"
