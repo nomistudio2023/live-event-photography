@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Event Gallery | 活動即時相簿</title>
+    <style>
+        :root {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --accent-color: #3b82f6;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+
+            /* --- Layout Configuration --- */
+            /* 調整這裡的數字來改變不同裝置的欄位數 */
+            --cols-desktop: 3;
+            /* 電腦版: 改為 3 欄 */
+            --cols-tablet: 2;
+            /* 平板/橫式手機 */
+            --cols-mobile: 1;
+            /* 手機直式 */
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+            overflow-x: hidden;
+            /* Prevent horizontal scroll */
+        }
+
+        /* Banner */
+        .hero {
+            position: relative;
+            background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.8)), url('https://images.unsplash.com/photo-1492684223066-81342ee5ff30?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80') no-repeat center center/cover;
+            height: 50vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            text-align: center;
+            margin-bottom: 2rem;
+            padding-bottom: 4rem;
+        }
+
+        .hero-content {
+            z-index: 2;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.6);
+            letter-spacing: 2px;
+            font-family: Arial, sans-serif;
+        }
+
+        .hero-content p {
+            font-size: 1.2rem;
+            color: #ddd;
+            font-weight: 300;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 1.5rem;
+        }
+
+        /* Section Titles */
+        .section-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        /* Featured (Newest) Photo */
+        .featured-container {
+            margin-bottom: 5rem;
+            text-align: center;
+        }
+
+        .featured-photo {
+            width: 100%;
+            max-width: 1000px;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            max-height: 80vh;
+            object-fit: contain;
+            background-color: var(--card-bg);
+            transition: transform 0.3s ease;
+            cursor: zoom-in;
+        }
+
+        .featured-photo:hover {
+            transform: scale(1.01);
+        }
+
+        /* Gallery Grid (CSS Grid) */
+        .gallery-masonry {
+            display: grid;
+            grid-template-columns: repeat(var(--cols-desktop), 1fr);
+            gap: 1rem;
+            padding-bottom: 4rem;
+        }
+
+        .gallery-item {
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: var(--card-bg);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s, filter 0.3s;
+            cursor: pointer;
+            position: relative;
+            /* 讓不同比例照片在 Grid 中自然對齊上方 */
+            align-self: start;
+        }
+
+        .gallery-item:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.1);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: auto;
+            display: block;
+            opacity: 0;
+            /* For fade-in effect */
+            transition: opacity 0.5s ease-in;
+        }
+
+        .gallery-item img.loaded {
+            opacity: 1;
+        }
+
+        /* Responsive Columns */
+        @media (max-width: 900px) {
+            .gallery-masonry {
+                grid-template-columns: repeat(var(--cols-tablet), 1fr);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .gallery-masonry {
+                grid-template-columns: 1fr;
+                /* 單欄 */
+                gap: 0.5rem;
+            }
+
+            .container {
+                padding: 0 1rem;
+            }
+
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+        }
+
+        .no-photos {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem;
+            color: var(--text-secondary);
+            font-style: italic;
+        }
+
+        /* Empty State Style */
+        .empty-state {
+            min-height: 500px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .empty-state-content {
+            text-align: center;
+            padding: 3rem 2rem;
+            max-width: 600px;
+        }
+
+        .empty-state-icon {
+            font-size: 5rem;
+            margin-bottom: 2rem;
+            display: inline-block;
+            animation: bounce 2s infinite;
+        }
+
+        .empty-state-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #3b82f6, #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .empty-state-subtitle {
+            font-size: 1.3rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .empty-state-decoration {
+            margin-top: 3rem;
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            font-size: 1.2rem;
+        }
+
+        .empty-state-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            animation: pulse-dot 2s infinite;
+        }
+
+        .empty-state-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .empty-state-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-20px);
+            }
+        }
+
+        @keyframes pulse-dot {
+            0%, 100% {
+                opacity: 0.4;
+                transform: scale(0.8);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Lightbox (Overlay) */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            /* Let clicks pass through when hidden */
+            transition: opacity 0.3s ease;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Navigation Arrows (Desktop Only) */
+        .nav-btn {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 56px;
+            height: 56px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 1002;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Position them explicitly at screen edges */
+        .prev-btn {
+            left: 20px;
+        }
+
+        .next-btn {
+            right: 20px;
+        }
+
+        /* Mobile Optimization: Hide buttons, use Swipe/Tap */
+        @media (max-width: 768px) {
+            .nav-btn {
+                display: none;
+            }
+
+            /* Maximize image on mobile */
+            .lightbox-img {
+                max-width: 100%;
+                max-height: 85vh;
+                /* Leave room for download button at bottom */
+                width: 100%;
+                /* Force width to fill if aspect ratio allows */
+                object-fit: contain;
+            }
+        }
+
+        .download-btn {
+            position: absolute;
+            bottom: 30px;
+            background: rgba(59, 130, 246, 0.9);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            z-index: 1002;
+            backdrop-filter: blur(5px);
+            letter-spacing: 1px;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        .download-btn:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
+
+        .lightbox-img {
+            max-width: 90%;
+            max-height: 90vh;
+            border-radius: 4px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            transform: scale(0.95);
+            transition: transform 0.3s cubic-bezier(0.2, 0, 0.2, 1);
+        }
+
+        .lightbox.active .lightbox-img {
+            transform: scale(1);
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            color: #fff;
+            font-size: 3rem;
+            cursor: pointer;
+            line-height: 1;
+            z-index: 1001;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .lightbox-close:hover {
+            opacity: 1;
+        }
+
+
+
+        /* Status Bar */
+        .status-bar {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: rgba(30, 30, 30, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            border: 1px solid #333;
+            color: var(--text-secondary);
+            z-index: 900;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .live-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background-color: #22c55e;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+            }
+
+            50% {
+                opacity: 0.4;
+                box-shadow: 0 0 0 4px rgba(34, 197, 94, 0);
+            }
+
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="hero" id="hero-section">
+        <div class="hero-content">
+            <h1 id="event-title">LIVE EVENT 2026</h1>
+            <p id="event-subtitle">即時活動花絮・精彩瞬間</p>
+        </div>
+    </header>
+
+    <div class="container">
+        <!-- Newest Photo Section -->
+        <section id="featured-section" style="display: none;">
+            <div class="section-header">
+                <h2 class="section-title">最新上傳 (Latest)</h2>
+            </div>
+            <div class="featured-container">
+                <img id="featured-img" class="featured-photo" src="" alt="Latest Upload" onclick="openLightboxIndex(0)">
+            </div>
+        </section>
+
+        <!-- Gallery Section -->
+        <section>
+            <div class="section-header">
+                <h2 class="section-title">活動相簿 (Gallery)</h2>
+            </div>
+            <div id="gallery" class="gallery-masonry">
+                <!-- Javascript will inject photos here -->
+                <div class="no-photos">等待照片上傳中...</div>
+            </div>
+        </section>
+    </div>
+
+    <div class="status-bar">
+        <span class="live-indicator"></span> 即時連線中... (<span id="photo-count">0</span> 張)
+    </div>
+
+    <!-- Lightbox -->
+    <div id="lightbox" class="lightbox" onclick="handleLightboxClick(event)">
+        <span class="lightbox-close" onclick="closeLightbox()">&times;</span>
+
+        <button class="nav-btn prev-btn" onclick="inputNav(-1)">&#10094;</button>
+        <button class="nav-btn next-btn" onclick="inputNav(1)">&#10095;</button>
+
+        <!-- Image Container for Swipe Detection -->
+        <img id="lightbox-img" class="lightbox-img" src="" alt="Full Screen">
+
+        <a id="download-btn" class="download-btn" href="#" download target="_blank">下載原圖</a>
+    </div>
+
+    <script>
+        // 自動檢測環境：本地開發或線上部署
+        const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const MANIFEST_URL = isLocal ? 'photos_web/manifest.json' : '/photo/2026-01-20/manifest.json';
+        const IMAGE_BASE_URL = isLocal ? 'photos_web/' : '/photo/2026-01-20/';
+        const EVENT_SETTINGS_URL = '/api/event-settings';
+
+        let allPhotos = []; // Store full list for navigation
+        let currentPhotoIndex = 0;
+        let isLightboxOpen = false;
+
+        // Load event settings
+        async function loadEventSettings() {
+            try {
+                const response = await fetch(`${EVENT_SETTINGS_URL}?t=${new Date().getTime()}`);
+                if (response.ok) {
+                    const settings = await response.json();
+                    const titleEl = document.getElementById('event-title');
+                    const subtitleEl = document.getElementById('event-subtitle');
+                    
+                    titleEl.textContent = settings.event_title || 'LIVE EVENT 2026';
+                    subtitleEl.textContent = settings.event_subtitle || '即時活動花絮・精彩瞬間';
+                    
+                    // Apply font settings
+                    if (settings.title_font_family) {
+                        titleEl.style.fontFamily = settings.title_font_family;
+                    }
+                    if (settings.title_font_size) {
+                        titleEl.style.fontSize = `${settings.title_font_size}px`;
+                    }
+                    if (settings.subtitle_font_family) {
+                        subtitleEl.style.fontFamily = settings.subtitle_font_family;
+                    }
+                    if (settings.subtitle_font_size) {
+                        subtitleEl.style.fontSize = `${settings.subtitle_font_size}px`;
+                    }
+                    
+                    // Update hero background image (prefer uploaded, fallback to URL)
+                    const heroSection = document.getElementById('hero-section');
+                    const imageUrl = settings.hero_image_uploaded || settings.hero_image_url;
+                    if (imageUrl) {
+                        heroSection.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.8)), url('${imageUrl}')`;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load event settings:', e);
+            }
+        }
+
+        // Load event settings on page load
+        loadEventSettings();
+        // Reload event settings every 30 seconds
+        setInterval(loadEventSettings, 30000);
+
+        async function fetchPhotos() {
+            try {
+                // Add timestamp to prevent caching
+                const response = await fetch(`${MANIFEST_URL}?t=${new Date().getTime()}`);
+                if (!response.ok) throw new Error('Manifest not found');
+
+                const newPhotos = await response.json();
+
+                // Compare arrays to check if updates are needed
+                if (JSON.stringify(newPhotos) !== JSON.stringify(allPhotos)) {
+                    // If just initialized or data changed
+                    allPhotos = newPhotos;
+                    updateGallery(allPhotos);
+                }
+
+                document.getElementById('photo-count').textContent = newPhotos.length;
+
+            } catch (error) {
+                // Silent fail/retry
+                // console.log('Polling...', error);
+            }
+        }
+
+        function updateGallery(photos) {
+            const gallery = document.getElementById('gallery');
+            const featuredSection = document.getElementById('featured-section');
+            const featuredImg = document.getElementById('featured-img');
+
+            // Handle empty state
+            if (photos.length === 0) {
+                gallery.innerHTML = '';
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+
+                const content = document.createElement('div');
+                content.className = 'empty-state-content';
+
+                const icon = document.createElement('div');
+                icon.className = 'empty-state-icon';
+                icon.textContent = '🎉';
+
+                const title = document.createElement('h2');
+                title.className = 'empty-state-title';
+                title.textContent = '活動即將開始！';
+
+                const subtitle = document.createElement('p');
+                subtitle.className = 'empty-state-subtitle';
+                subtitle.textContent = '敬請期待最新照片...';
+
+                const decoration = document.createElement('div');
+                decoration.className = 'empty-state-decoration';
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'empty-state-dot';
+                    decoration.appendChild(dot);
+                }
+
+                content.appendChild(icon);
+                content.appendChild(title);
+                content.appendChild(subtitle);
+                content.appendChild(decoration);
+                emptyState.appendChild(content);
+                gallery.appendChild(emptyState);
+
+                featuredSection.style.display = 'none';
+                return;
+            }
+
+            // 1. Handle Featured Photo (The newest one)
+            const newestPhoto = photos[0];
+            if (!featuredImg.src.endsWith(newestPhoto)) {
+                featuredSection.style.display = 'block';
+
+                // Preload image
+                const img = new Image();
+                img.onload = () => {
+                    featuredImg.src = img.src;
+                    // Trigger a simple flash animation via CSS class if desired
+                    featuredImg.parentElement.style.animation = 'none';
+                    featuredImg.parentElement.offsetHeight; /* trigger reflow */
+                    featuredImg.parentElement.style.animation = 'fadeIn 0.5s ease';
+                };
+                img.onerror = () => {
+                    console.error('Failed to load featured image:', newestPhoto);
+                    featuredSection.style.display = 'none';
+                };
+                img.src = IMAGE_BASE_URL + newestPhoto + '?t=' + new Date().getTime();
+            }
+
+            // 2. Handle Gallery (Masonry)
+            // Strategy: Rebuild entire gallery content for simplicity in this demo.
+            // In Production: We should use a Virtualized List or Append-Only approach for 1000+ photos.
+
+            // Generate HTML string
+            const gridHTML = photos.map((photo, index) => {
+                // Skip the first one in the grid? Let's keep it for completeness or skip.
+                // Let's skip the very first one if it appears in Featured section to avoid duplicate visual
+                if (index === 0) return '';
+
+                return `
+                    <div class="gallery-item" onclick="openLightboxIndex(${index})">
+                        <img src="${IMAGE_BASE_URL}${photo}?t=${new Date().getTime()}" 
+                             onload="this.classList.add('loaded')" 
+                             onerror="this.parentElement.style.display='none'; console.error('Failed to load image: ${photo}');"
+                             alt="Event Photo ${index}">
+                    </div>
+                `;
+            }).join('');
+
+            // Only update DOM if content is different (though we already checked JSON above)
+            if (gallery.innerHTML !== gridHTML) {
+                gallery.innerHTML = gridHTML;
+            }
+        }
+
+        // --- Lightbox Functions ---
+
+        // --- Navigation Logic (Tap / Swipe / Keyboard) ---
+
+        function handleLightboxClick(e) {
+            // Check if clicked element is the close button or download button
+            if (e.target.classList.contains('lightbox-close') || e.target.closest('#download-btn') || e.target.closest('.nav-btn')) {
+                // Let the default handlers (or onclicks defined in HTML) work
+                if (e.target.classList.contains('lightbox-close')) closeLightbox();
+                return;
+            }
+
+            // IG-style Navigation Logic (Tap Zones)
+            const width = window.innerWidth;
+            const x = e.clientX;
+
+            // Define sensitive zones (e.g., left 30%, right 30%)
+            const tapThreshold = 0.3;
+
+            if (x < width * tapThreshold) {
+                // Left Zone -> Prev
+                inputNav(-1);
+            } else if (x > width * (1 - tapThreshold)) {
+                // Right Zone -> Next
+                inputNav(1);
+            } else {
+                // Center Zone -> Close Lightbox (or toggle controls, but simple close is better here)
+                // Only close if we clicked the background overlay, not the image itself?
+                // Actually, IG stories pauses on hold. Here, let's close if clicked on background.
+                // If clicked on image center, maybe do nothing or close? 
+                // Let's stick to: Click background = Close. Click Image Center = Nothing (to avoid accidental close)
+
+                if (e.target.id === 'lightbox') {
+                    closeLightbox();
+                }
+            }
+        }
+
+
+
+        function openLightboxIndex(index) {
+            if (index < 0 || index >= allPhotos.length) return;
+            currentPhotoIndex = index;
+            showLightboxImage();
+
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.add('active');
+            isLightboxOpen = true;
+            document.body.style.overflow = 'hidden';
+        }
+
+        function showLightboxImage() {
+            const img = document.getElementById('lightbox-img');
+            const btn = document.getElementById('download-btn');
+            const fileName = allPhotos[currentPhotoIndex];
+            const src = IMAGE_BASE_URL + fileName;
+
+            img.src = src;
+            btn.href = src;
+        }
+
+        function inputNav(direction) {
+            const newIndex = currentPhotoIndex + direction;
+            if (newIndex >= 0 && newIndex < allPhotos.length) {
+                currentPhotoIndex = newIndex;
+                showLightboxImage();
+
+                // Add a small visual feedback/animation could go here
+            }
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            lightbox.classList.remove('active');
+            isLightboxOpen = false;
+            document.body.style.overflow = '';
+        }
+
+        // Keyboard Navigation
+        document.addEventListener('keydown', (e) => {
+            if (!isLightboxOpen) return;
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') inputNav(-1);
+            if (e.key === 'ArrowRight') inputNav(1);
+        });
+
+        // --- Touch Swipe Navigation ---
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const lightboxOverlay = document.getElementById('lightbox');
+
+        lightboxOverlay.addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        lightboxOverlay.addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchStartX - touchEndX > 50) inputNav(1); // Left Swipe (Next)
+            if (touchEndX - touchStartX > 50) inputNav(-1); // Right Swipe (Prev)
+        }, { passive: true });
+
+        // Poll every 3 seconds
+        setInterval(fetchPhotos, 3000);
+
+        // Initial load
+        fetchPhotos();
+    </script>
+</body>
+
+</html>
