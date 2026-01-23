@@ -60,11 +60,11 @@
     "unpublished": 1
   },
   "15D_7112.jpg": {
-    "published": 3,
+    "published": 4,
     "unpublished": 1
   },
   "15D_7113.jpg": {
-    "published": 6,
+    "published": 8,
     "unpublished": 0
   },
   "15D_7113_003.jpg": {
@@ -73,7 +73,7 @@
   },
   "15D_7113_002.jpg": {
     "published": 0,
-    "unpublished": 2
+    "unpublished": 3
   },
   "15D_7111_003.jpg": {
     "published": 0,
@@ -82,5 +82,133 @@
   "15D_7111_002.jpg": {
     "published": 0,
     "unpublished": 1
+  },
+  "15D_7112_003.jpg": {
+    "published": 0,
+    "unpublished": 1
+  },
+  "15D_7251.jpg": {
+    "published": 2,
+    "unpublished": 0
+  },
+  "15D_7250.jpg": {
+    "published": 5,
+    "unpublished": 3
+  },
+  "15D_7252.jpg": {
+    "published": 2,
+    "unpublished": 1
+  },
+  "15D_7253.jpg": {
+    "published": 5,
+    "unpublished": 1
+  },
+  "15D_7251_002.jpg": {
+    "published": 0,
+    "unpublished": 1
+  },
+  "15D_7250_002.jpg": {
+    "published": 0,
+    "unpublished": 1
+  },
+  "15D_7257.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7255.jpg": {
+    "published": 2,
+    "unpublished": 0
+  },
+  "15D_7256.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7254.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7274.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7272.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7275.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7276.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7277.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7278.jpg": {
+    "published": 1,
+    "unpublished": 1
+  },
+  "15D_7330.jpg": {
+    "published": 2,
+    "unpublished": 0
+  },
+  "15D_7326.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7325.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7339.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7338.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7340.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7341.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7324.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7461.jpg": {
+    "published": 3,
+    "unpublished": 1
+  },
+  "15D_7459.jpg": {
+    "published": 2,
+    "unpublished": 1
+  },
+  "15D_7458.jpg": {
+    "published": 2,
+    "unpublished": 1
+  },
+  "15D_7457.jpg": {
+    "published": 3,
+    "unpublished": 2
+  },
+  "15D_7428.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7427.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "15D_7426.jpg": {
+    "published": 1,
+    "unpublished": 0
   }
 }

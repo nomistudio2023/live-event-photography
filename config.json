@@ -1,24 +1,37 @@
 {
-    "watch_folder": "./photos_original",
-    "output_folder": "./photos_web",
-    "max_size": 1600,
-    "jpeg_quality": 85,
-    "processing": {
-        "sharpen": true,
-        "progressive": true,
-        "watermark": {
-            "enabled": true,
-            "mode": "corner_logo",
-            "image_path": "./assets/watermark.png",
-            "position": "bottom-right",
-            "opacity": 0.8,
-            "scale_percentage": 20,
-            "margin": 50
-        },
-        "frame": {
-            "enabled": false,
-            "image_path": "./assets/frame.png",
-            "mode": "cover"
-        }
+  "watch_folder": "./photos_original",
+  "output_folder": "./photos_web",
+  "max_size": 1600,
+  "jpeg_quality": 85,
+  "processing": {
+    "sharpen": true,
+    "progressive": true,
+    "watermark": {
+      "enabled": true,
+      "mode": "corner_logo",
+      "image_path": "./assets/watermark.png",
+      "position": "bottom-center",
+      "opacity": 0.52,
+      "scale_percentage": 39.0,
+      "margin": 90,
+      "type": "text",
+      "text": "國志電子尾牙晚宴  2026",
+      "text_font_size": 26,
+      "text_color": [
+        255,
+        255,
+        255,
+        200
+      ]
+    },
+    "frame": {
+      "enabled": false,
+      "image_path": "./assets/frame.png",
+      "mode": "cover"
     }
+  },
+  "buffer_folder": "/Volumes/詠松-2Tssd/2026-live-event-photograghy-test-folder/photos_buffer",
+  "web_folder": "/Volumes/詠松-2Tssd/2026-live-event-photograghy-test-folder/photos_web",
+  "trash_folder": "/Volumes/詠松-2Tssd/2026-live-event-photograghy-test-folder/photos_trash",
+  "archive_folder": "/Volumes/詠松-2Tssd/2026-live-event-photograghy-test-folder/photos_archive"
 }
