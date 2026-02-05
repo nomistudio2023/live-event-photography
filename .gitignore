@@ -20,11 +20,5 @@ photos_buffer/
 photos_archive/
 photos_trash/
 
-# 排除舊版本
-index_v2.html
-auto_compress.py
-discussion_log.md
-project_status_20260118.md
-generate_watermark.py
-server.py
-templates/
+# 排除舊版/封存的程式碼和文檔
+docs/archive/
