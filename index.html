@@ -486,7 +486,7 @@
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         const MANIFEST_URL = isLocal ? 'photos_web/manifest.json' : '/photo/2026-01-20/manifest.json';
         const IMAGE_BASE_URL = isLocal ? 'photos_web/' : '/photo/2026-01-20/';
-        const EVENT_SETTINGS_URL = '/api/event-settings';
+        const EVENT_SETTINGS_URL = isLocal ? '/api/event-settings' : '/photo/2026-01-20/event_settings.json';
 
         let allPhotos = []; // Store full list for navigation
         let currentPhotoIndex = 0;

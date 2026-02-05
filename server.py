@@ -1010,10 +1010,22 @@ def load_event_settings():
     }
 
 def save_event_settings(settings):
-    """Save event settings to JSON file"""
+    """Save event settings to JSON file and mirror to web folder"""
     try:
+        # 1. Save to config dir
         with open(EVENT_SETTINGS_FILE, "w", encoding="utf-8") as f:
             json.dump(settings, f, ensure_ascii=False, indent=2)
+        
+        # 2. Mirror to web folder for public access (R2 sync)
+        if "web_folder" in CONFIG:
+            web_settings_file = os.path.join(CONFIG["web_folder"], "event_settings.json")
+            try:
+                os.makedirs(CONFIG["web_folder"], exist_ok=True)
+                with open(web_settings_file, "w", encoding="utf-8") as f:
+                    json.dump(settings, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                logger.warning(f"Failed to mirror settings to web folder: {e}")
+
         return True
     except Exception as e:
         logger.error(f"Failed to save event settings: {e}")
@@ -1067,6 +1079,15 @@ async def upload_hero_image(file: UploadFile = File(...)):
         content = await file.read()
         with open(file_path, "wb") as f:
             f.write(content)
+
+        # Mirror to web folder assets (for R2 sync)
+        if "web_folder" in CONFIG:
+            web_assets = os.path.join(CONFIG["web_folder"], "assets")
+            try:
+                os.makedirs(web_assets, exist_ok=True)
+                shutil.copy2(file_path, os.path.join(web_assets, filename))
+            except Exception as e:
+                logger.warning(f"Failed to mirror hero image: {e}")
         
         # Update event settings
         settings = load_event_settings()
@@ -1100,6 +1121,15 @@ async def upload_watermark(file: UploadFile = File(...)):
         content = await file.read()
         with open(file_path, "wb") as f:
             f.write(content)
+
+        # Mirror to web folder assets (for R2 sync)
+        if "web_folder" in CONFIG:
+            web_assets = os.path.join(CONFIG["web_folder"], "assets")
+            try:
+                os.makedirs(web_assets, exist_ok=True)
+                shutil.copy2(file_path, os.path.join(web_assets, "watermark.png"))
+            except Exception as e:
+                logger.warning(f"Failed to mirror watermark: {e}")
         
         # Reload processor to load new watermark
         processor.load_assets()

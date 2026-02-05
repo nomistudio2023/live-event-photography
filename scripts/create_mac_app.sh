@@ -5,7 +5,8 @@
 set -e
 
 cd "$(dirname "$0")"
-PROJECT_DIR="$(pwd)"
+SCRIPT_DIR="$(pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
 APP_NAME="Live Event Photo"
 APP_PATH="${PROJECT_DIR}/dist/${APP_NAME}.app"
@@ -14,45 +15,25 @@ echo "================================================"
 echo "🔧 Creating Mac App: ${APP_NAME}"
 echo "================================================"
 
-# Create dist directory
-mkdir -p dist
+# Create dist directory in project root
+mkdir -p "${PROJECT_DIR}/dist"
 
 # Create the AppleScript
 SCRIPT_CONTENT="
 -- Live Event Photo Launcher
--- Auto-generated AppleScript
+-- Auto-generated AppleScript with updated paths
 
 on run
     set projectPath to \"${PROJECT_DIR}\"
-    set serverScript to projectPath & \"/server.py\"
+    set launchScript to projectPath & \"/scripts/start_event.sh\"
 
-    -- Check if server is already running
-    try
-        do shell script \"lsof -i :8000 | grep LISTEN\"
-        -- Server already running, just open browser
-        tell application \"System Events\"
-            open location \"http://localhost:8000\"
-        end tell
-        display notification \"Opening existing server...\" with title \"Live Event Photo\"
-        return
-    end try
-
-    -- Start server in Terminal
+    -- Start via Terminal
     tell application \"Terminal\"
         activate
-        set serverWindow to do script \"cd '\" & projectPath & \"' && python3 server.py\"
-        set custom title of front window to \"Live Event Photo Server\"
+        -- Using 'do script' to run the bash script
+        do script \"'\" & launchScript & \"'\"
     end tell
 
-    -- Wait for server to start
-    delay 2
-
-    -- Open browser
-    tell application \"System Events\"
-        open location \"http://localhost:8000\"
-    end tell
-
-    display notification \"Server started on http://localhost:8000\" with title \"Live Event Photo\" subtitle \"Admin Panel Opening...\"
 end run
 "
 

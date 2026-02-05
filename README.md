@@ -32,6 +32,12 @@ pip install -r requirements.txt
 
 ### 2. 一鍵啟動
 
+**雙擊啟動:**
+
+雙擊根目錄的 `Launch Live Event Photo.command`
+
+**或使用終端機:**
+
 ```bash
 ./scripts/start_event.sh
 ```

@@ -74,7 +74,7 @@ def get_local_photos():
 
     photos = {
         f.name for f in LOCAL_PHOTOS_DIR.iterdir()
-        if f.is_file() and f.suffix.lower() in PHOTO_EXTENSIONS
+        if f.is_file() and not f.name.startswith('.') and f.suffix.lower() in PHOTO_EXTENSIONS
     }
     return photos
 
@@ -235,6 +235,31 @@ def full_sync():
         return False
 
 
+def sync_static_files():
+    """同步靜態資源 (event_settings.json, assets/)"""
+    # 1. Sync event_settings.json
+    settings_file = LOCAL_PHOTOS_DIR / "event_settings.json"
+    if settings_file.exists():
+        try:
+            subprocess.run(
+                ["rclone", "copy", str(settings_file), f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/"],
+                capture_output=True, timeout=30
+            )
+        except Exception:
+            pass
+
+    # 2. Sync assets folder
+    assets_dir = LOCAL_PHOTOS_DIR / "assets"
+    if assets_dir.exists():
+        try:
+            subprocess.run(
+                ["rclone", "copy", str(assets_dir), f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/assets/"],
+                capture_output=True, timeout=60
+            )
+        except Exception:
+            pass
+
+
 def main():
     """主程式"""
     print("=" * 50)
@@ -245,6 +270,10 @@ def main():
     print(f"⏱️  檢查間隔: {CHECK_INTERVAL} 秒")
     print("-" * 50)
     print("按 Ctrl+C 停止\n")
+
+    # 初始同步靜態資源
+    print("⚙️  同步靜態資源 (Settings & Assets)...")
+    sync_static_files()
 
     # 初始化：取得目前狀態
     previous_local = get_local_photos()
@@ -282,8 +311,14 @@ def main():
 
     print("\n🔍 開始監控變化...\n")
 
+    loop_count = 0
     try:
         while True:
+            # 每 10 次循環 (30秒) 同步一次靜態檔案
+            if loop_count % 10 == 0 and loop_count > 0:
+                sync_static_files()
+            loop_count += 1
+
             current_local = get_local_photos()
 
             if current_local != previous_local:

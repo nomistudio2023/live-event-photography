@@ -28,6 +28,23 @@ fi
 echo "📂 工作目錄: $PROJECT_DIR"
 echo ""
 
+# 防止 Python 生成 bytecode
+export PYTHONDONTWRITEBYTECODE=1
+# 防止 macOS 生成 ._ 文件
+export COPYFILE_DISABLE=1
+
+# 清理現有的隱藏文件 (._*)
+echo "🧹 清理臨時文件..."
+find . -name "._*" -delete 2>/dev/null || true
+find . -name ".DS_Store" -delete 2>/dev/null || true
+
+# 檢查端口是否被占用，如果是則強制殺死
+if lsof -Pi :8000 -sTCP:LISTEN -t >/dev/null ; then
+    echo "⚠️  Port 8000 被占用，正在清理舊進程..."
+    lsof -ti :8000 | xargs kill -9 2>/dev/null || true
+    sleep 1
+fi
+
 # 啟動 Admin 後台 (背景執行)
 echo "🖥️  啟動 Admin 後台..."
 python3 server.py &
@@ -38,6 +55,10 @@ echo ""
 
 # 等待 server 啟動
 sleep 2
+
+# 自動開啟瀏覽器
+echo "🌐 開啟管理後台..."
+open "http://localhost:8000"
 
 # 啟動 R2 同步腳本 (前景執行，方便看 log)
 echo "☁️  啟動 R2 同步腳本..."
