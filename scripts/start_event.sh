@@ -5,7 +5,8 @@
 #
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
 
 echo "================================================"
 echo "🎬 Live Event Photography - 活動模式啟動"
@@ -24,7 +25,7 @@ if ! command -v rclone &> /dev/null; then
     exit 1
 fi
 
-echo "📂 工作目錄: $SCRIPT_DIR"
+echo "📂 工作目錄: $PROJECT_DIR"
 echo ""
 
 # 啟動 Admin 後台 (背景執行)

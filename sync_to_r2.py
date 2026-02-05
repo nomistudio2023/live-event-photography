@@ -23,7 +23,7 @@ os.environ['COPYFILE_DISABLE'] = '1'
 # 載入 config.json 以取得動態資料夾路徑
 def load_config():
     """Load config from config.json, fallback to default"""
-    config_file = Path(__file__).parent / "config.json"
+    config_file = Path(__file__).parent / "config" / "config.json"
     default_web_folder = Path(__file__).parent / "photos_web"
     
     if config_file.exists():

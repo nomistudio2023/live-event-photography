@@ -5,7 +5,8 @@
 #
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_DIR"
 
 # 設定終端標題
 echo -e "\033]0;Live Event Photo - Server\007"
@@ -14,7 +15,7 @@ echo "================================================"
 echo "🖥️  Live Event Photography - Admin Server"
 echo "================================================"
 echo ""
-echo "📂 工作目錄: $SCRIPT_DIR"
+echo "📂 工作目錄: $PROJECT_DIR"
 echo "🌐 URL: http://localhost:8000"
 echo ""
 echo "按 Ctrl+C 停止服務器"

@@ -51,7 +51,7 @@ DEFAULT_CONFIG = {
 
 def load_config_file():
     """Load config from JSON file if exists, otherwise use default CONFIG"""
-    config_file = "config.json"
+    config_file = "config/config.json"
     if os.path.exists(config_file):
         try:
             with open(config_file, "r", encoding="utf-8") as f:
@@ -988,7 +988,7 @@ async def unpublish_image(req: UnpublishRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 # --- Event Settings Management ---
-EVENT_SETTINGS_FILE = "event_settings.json"
+EVENT_SETTINGS_FILE = "config/event_settings.json"
 
 def load_event_settings():
     """Load event settings from JSON file"""
@@ -1134,7 +1134,7 @@ async def update_watermark_settings(req: WatermarkSettingsRequest):
     
     # Save to config file
     try:
-        config_file = "config.json"
+        config_file = "config/config.json"
         with open(config_file, "r", encoding="utf-8") as f:
             file_config = json.load(f)
     except:
@@ -1186,7 +1186,7 @@ async def update_folder_settings(req: FolderSettingsRequest):
     
     # Save to config file
     try:
-        config_file = "config.json"
+        config_file = "config/config.json"
         with open(config_file, "r", encoding="utf-8") as f:
             file_config = json.load(f)
     except:
