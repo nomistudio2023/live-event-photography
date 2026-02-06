@@ -1106,11 +1106,30 @@
                 const data = await res.json();
                 document.getElementById('event-title-input').value = data.event_title || '';
                 document.getElementById('event-subtitle-input').value = data.event_subtitle || '';
-                document.getElementById('hero-image-url-input').value = data.hero_image_url || '';
                 document.getElementById('title-font-family-input').value = data.title_font_family || 'Arial, sans-serif';
                 document.getElementById('title-font-size-input').value = data.title_font_size || 56;
                 document.getElementById('subtitle-font-family-input').value = data.subtitle_font_family || 'Arial, sans-serif';
                 document.getElementById('subtitle-font-size-input').value = data.subtitle_font_size || 20;
+                document.getElementById('hero-image-url-input').value = data.hero_image_url || '';
+
+                // Update Hero Preview
+                const previewContainer = document.getElementById('hero-preview-container');
+                const previewImg = document.getElementById('hero-preview-img');
+                const previewType = document.getElementById('hero-preview-type');
+                const previewName = document.getElementById('hero-preview-name');
+
+                const activeImage = data.hero_image_uploaded || data.hero_image_url;
+                if (activeImage) {
+                    previewContainer.classList.remove('hidden');
+                    previewImg.src = activeImage + (activeImage.startsWith('/') ? '?t=' + new Date().getTime() : '');
+                    previewType.innerText = data.hero_image_uploaded ? 'ACTIVE: UPLOADED' : 'ACTIVE: URL MODE';
+                    previewName.innerText = activeImage.split('/').pop();
+                } else {
+                    previewContainer.classList.add('hidden');
+                }
+
+                // Fetch gallery
+                fetchHeroGallery();
             } catch (e) {
                 console.error('Failed to load event settings:', e);
             }
@@ -1140,6 +1159,122 @@
             }
         }
 
+        function setPreviewMode(mode) {
+            const container = document.getElementById('hero-preview-container');
+            const btnDesktop = document.getElementById('btn-prev-desktop');
+            const btnMobile = document.getElementById('btn-prev-mobile');
+
+            if (mode === 'desktop') {
+                container.classList.remove('aspect-[9/16]');
+                container.classList.add('aspect-[21/9]');
+                container.style.maxWidth = '';
+                container.style.margin = '';
+                btnDesktop.classList.add('bg-blue-600', 'text-white');
+                btnDesktop.classList.remove('hover:bg-gray-800', 'text-gray-400');
+                btnMobile.classList.remove('bg-blue-600', 'text-white');
+                btnMobile.classList.add('hover:bg-gray-800', 'text-gray-400');
+            } else {
+                container.classList.remove('aspect-[21/9]');
+                container.classList.add('aspect-[9/16]');
+                container.style.maxWidth = '300px';
+                container.style.margin = '0 auto';
+                btnMobile.classList.add('bg-blue-600', 'text-white');
+                btnMobile.classList.remove('hover:bg-gray-800', 'text-gray-400');
+                btnDesktop.classList.remove('bg-blue-600', 'text-white');
+                btnDesktop.classList.add('hover:bg-gray-800', 'text-gray-400');
+            }
+        }
+
+        async function fetchHeroGallery() {
+            const gallery = document.getElementById('hero-gallery');
+            try {
+                const res = await fetch('/api/list-hero-images');
+                const data = await res.json();
+
+                if (data.images.length === 0) {
+                    gallery.innerHTML = '<div class="text-[10px] text-gray-600 py-4 w-full text-center">尚無上傳圖片</div>';
+                    return;
+                }
+
+                gallery.innerHTML = data.images.map(img => `
+                    <div class="relative min-w-[120px] h-20 bg-gray-900 rounded-md overflow-hidden border border-gray-700 group shrink-0">
+                        <img src="${img.url}" class="w-full h-full object-cover opacity-60 group-hover:opacity-100 cursor-pointer transition" onclick="selectHeroImage('${img.filename}')">
+                        <button onclick="deleteHeroFromGallery('${img.filename}')" class="absolute top-1 right-1 bg-black/60 hover:bg-red-600 text-white p-1 rounded transition opacity-0 group-hover:opacity-100">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                gallery.innerHTML = '<div class="text-[10px] text-red-500 py-4">無法載入庫存</div>';
+            }
+        }
+
+        async function selectHeroImage(filename) {
+            try {
+                const res = await fetch('/api/set-hero-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ filename })
+                });
+                if (res.ok) {
+                    showToast('✅ 已切換背景圖片');
+                    await loadEventSettings();
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteHeroFromGallery(filename) {
+            showConfirmModal(`確定要永久刪除此圖片嗎？`, async () => {
+                try {
+                    const res = await fetch('/api/delete-hero-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename })
+                    });
+                    if (res.ok) {
+                        showToast('🗑 已刪除');
+                        await loadEventSettings();
+                    }
+                } catch (e) { console.error(e); }
+            });
+        }
+
+        async function clearHeroImage() {
+            showConfirmModal('確定要停用上傳圖片並恢復使用網址嗎？', async () => {
+                try {
+                    const res = await fetch('/api/delete-hero-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({}) // Empty body = clear selection
+                    });
+                    if (res.ok) {
+                        showToast('🔄 已切換回 URL 模式');
+                        await loadEventSettings();
+                    }
+                } catch (e) { console.error(e); }
+            });
+        }
+
+        async function applyHeroUrl() {
+            const urlInput = document.getElementById('hero-image-url-input');
+            const url = urlInput.value;
+            if (!url) {
+                showToast('❌ 請輸入網址');
+                return;
+            }
+            try {
+                const res = await fetch('/api/set-hero-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                if (res.ok) {
+                    showToast('✅ 已套用網址');
+                    await loadEventSettings();
+                }
+            } catch (e) { console.error(e); }
+        }
+
         async function uploadHeroImage() {
             const fileInput = document.getElementById('hero-image-upload');
             if (!fileInput.files || !fileInput.files[0]) {
@@ -1151,6 +1286,7 @@
             formData.append('file', fileInput.files[0]);
 
             try {
+                showToast('⏳ 上傳中...');
                 const res = await fetch('/api/upload-hero-image', {
                     method: 'POST',
                     body: formData
@@ -1158,9 +1294,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     showToast('✅ 背景圖片上傳成功');
-                    // Update URL input with uploaded image URL
-                    document.getElementById('hero-image-url-input').value = '';
-                    // Reload settings to show new image
+                    fileInput.value = ''; // Clear input
                     await loadEventSettings();
                 } else {
                     showToast('❌ 上傳失敗: ' + (data.detail || 'Unknown error'));
@@ -1170,6 +1304,8 @@
                 showToast('❌ 上傳失敗');
             }
         }
+
+
 
         async function uploadWatermarkImage() {
             const fileInput = document.getElementById('watermark-image-upload');
@@ -1486,17 +1622,84 @@
                             <input type="number" id="subtitle-font-size-input" min="12" max="48"
                                 class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                         </div>
-                        <div>
-                            <label class="block text-sm text-gray-300 mb-1">背景圖片 URL</label>
-                            <input type="text" id="hero-image-url-input"
-                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2"
-                                placeholder="https://...">
-                            <label class="block text-sm text-gray-300 mb-1">或上傳本地圖片</label>
-                            <input type="file" id="hero-image-upload" accept="image/*"
-                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
-                            <button onclick="uploadHeroImage()"
-                                class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤
-                                上傳背景圖片</button>
+                        <div class="bg-gray-750 p-5 rounded-lg border border-gray-700 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <label
+                                    class="text-sm font-bold text-gray-300 uppercase tracking-widest">背景圖片實時預覽</label>
+                                <div class="flex bg-gray-900 rounded p-1 gap-1">
+                                    <button onclick="setPreviewMode('desktop')" id="btn-prev-desktop"
+                                        class="px-3 py-1 text-[10px] rounded bg-blue-600 text-white transition">電腦版</button>
+                                    <button onclick="setPreviewMode('mobile')" id="btn-prev-mobile"
+                                        class="px-3 py-1 text-[10px] rounded hover:bg-gray-800 text-gray-400 transition">手機版</button>
+                                </div>
+                            </div>
+
+                            <!-- Large Dynamic Preview -->
+                            <div id="hero-preview-container"
+                                class="relative w-full aspect-[21/9] bg-gray-900 rounded-lg overflow-hidden border border-gray-600 shadow-inner group transition-all duration-300">
+                                <img id="hero-preview-img"
+                                    class="w-full h-full object-cover transition-all duration-500 group-hover:scale-105 opacity-80">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-4">
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex flex-col">
+                                            <span id="hero-preview-type"
+                                                class="text-[9px] font-bold text-blue-400 uppercase"></span>
+                                            <span id="hero-preview-name"
+                                                class="text-[10px] text-gray-400 font-mono truncate max-w-[200px]"></span>
+                                        </div>
+                                        <button onclick="clearHeroImage()" title="停用上傳圖片，改用 URL"
+                                            class="bg-red-500/20 hover:bg-red-500 text-red-500 hover:text-white p-2 rounded-lg transition-all shadow-xl">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                                </path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                                <!-- URL Apply -->
+                                <div class="space-y-2">
+                                    <label class="block text-xs font-bold text-gray-500 uppercase">1. 使用網址 (URL)</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="hero-image-url-input"
+                                            class="flex-1 bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-xs"
+                                            placeholder="https://images.unsplash.com/...">
+                                        <button onclick="applyHeroUrl()"
+                                            class="bg-gray-600 hover:bg-white hover:text-black text-white px-3 py-1.5 rounded transition text-[10px] font-bold shrink-0">套用</button>
+                                    </div>
+                                </div>
+                                <!-- Upload New -->
+                                <div class="space-y-2">
+                                    <div class="flex justify-between items-center">
+                                        <label class="block text-xs font-bold text-gray-500 uppercase">2. 上傳新背景</label>
+                                        <span class="text-[9px] text-gray-600">限制 5MB</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <input type="file" id="hero-image-upload" accept="image/*"
+                                            class="flex-1 bg-gray-700 text-white px-2 py-1 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-xs">
+                                        <button onclick="uploadHeroImage()"
+                                            class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition text-[10px] font-bold shrink-0">上傳</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- History Gallery -->
+                            <div class="pt-4 border-t border-gray-700">
+                                <label class="block text-[10px] font-bold text-gray-500 uppercase mb-3">3.
+                                    歷史上傳圖片庫</label>
+                                <div id="hero-gallery"
+                                    class="flex gap-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+                                    <div class="animate-pulse flex gap-3">
+                                        <div class="w-24 h-16 bg-gray-700 rounded-md"></div>
+                                        <div class="w-24 h-16 bg-gray-700 rounded-md"></div>
+                                        <div class="w-24 h-16 bg-gray-700 rounded-md"></div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex gap-2">
                             <button onclick="saveEventSettings()"

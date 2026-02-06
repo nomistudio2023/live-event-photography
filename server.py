@@ -1066,6 +1066,14 @@ async def upload_hero_image(file: UploadFile = File(...)):
         filename_lower = file.filename.lower()
         if not filename_lower.endswith(('.png', '.jpg', '.jpeg', '.webp')):
             raise HTTPException(status_code=400, detail="Only PNG, JPG, JPEG, WEBP files are allowed")
+
+        # Validate file size (5MB limit)
+        MAX_HERO_SIZE = 5 * 1024 * 1024 # 5MB
+        file.file.seek(0, os.SEEK_END)
+        file_size = file.file.tell()
+        file.file.seek(0)
+        if file_size > MAX_HERO_SIZE:
+            raise HTTPException(status_code=400, detail="檔案太大 (限制 5MB)")
         
         # Save to assets folder
         assets_folder = CONFIG.get("assets_folder", "./assets")
@@ -1097,6 +1105,81 @@ async def upload_hero_image(file: UploadFile = File(...)):
         return {"status": "success", "url": f"/assets/{filename}", "filename": filename}
     except Exception as e:
         logger.error(f"Failed to upload hero image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/list-hero-images")
+async def list_hero_images():
+    """List all available hero images in assets folder"""
+    try:
+        assets_folder = CONFIG.get("assets_folder", "./assets")
+        if not os.path.exists(assets_folder):
+            return {"images": []}
+            
+        images = []
+        for f in os.listdir(assets_folder):
+            if f.startswith("hero_bg_") and f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp')):
+                file_path = os.path.join(assets_folder, f)
+                images.append({
+                    "filename": f,
+                    "url": f"/assets/{f}",
+                    "time": os.path.getmtime(file_path)
+                })
+        
+        # Sort by newest first
+        images.sort(key=lambda x: x["time"], reverse=True)
+        return {"images": images}
+    except Exception as e:
+        logger.error(f"Failed to list hero images: {e}")
+        return {"images": []}
+
+@app.post("/api/set-hero-image")
+async def set_hero_image(req: dict):
+    """Set active hero image (either an uploaded filename or a URL)"""
+    try:
+        settings = load_event_settings()
+        if "filename" in req:
+            settings["hero_image_uploaded"] = f"/assets/{req['filename']}"
+        elif "url" in req:
+            settings["hero_image_uploaded"] = None
+            settings["hero_image_url"] = req["url"]
+        
+        save_event_settings(settings)
+        return {"status": "success"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/delete-hero-image")
+async def delete_hero_image(req: dict = None):
+    """Delete a specific hero image or clear active selection"""
+    try:
+        settings = load_event_settings()
+        filename_to_delete = req.get("filename") if req else None
+        
+        assets_folder = CONFIG.get("assets_folder", "./assets")
+        web_folder = CONFIG.get("web_folder", "./photos_web")
+        
+        if filename_to_delete:
+            # Delete specific file
+            paths = [
+                os.path.join(assets_folder, filename_to_delete),
+                os.path.join(web_folder, "assets", filename_to_delete)
+            ]
+            for p in paths:
+                if os.path.exists(p):
+                    try: os.remove(p)
+                    except: pass
+            
+            # If deleted image was the active one, clear selection
+            if settings.get("hero_image_uploaded") == f"/assets/{filename_to_delete}":
+                settings["hero_image_uploaded"] = None
+        else:
+            # Just clear active selection (back to URL mode)
+            settings["hero_image_uploaded"] = None
+        
+        save_event_settings(settings)
+        return {"status": "success"}
+    except Exception as e:
+        logger.error(f"Failed to delete hero image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/upload-watermark")
