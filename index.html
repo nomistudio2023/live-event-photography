@@ -472,6 +472,8 @@
 
     <div class="status-bar">
         <span class="live-indicator"></span> 即時連線中... (<span id="photo-count">0</span> 張)
+        <span class="ml-4 text-xs text-gray-500 cursor-pointer hover:text-white" onclick="runDiagnostics()">[DEBUG
+            v2.5]</span>
     </div>
 
     <!-- Lightbox -->
@@ -497,6 +499,43 @@
         let allPhotos = []; // Store full list for navigation
         let currentPhotoIndex = 0;
         let isLightboxOpen = false;
+
+        // Diagnostics Tool
+        async function runDiagnostics() {
+            const report = [];
+            report.push(`Location: ${window.location.hostname}`);
+            report.push(`Environment: ${isLocal ? 'Local' : 'Production'}`);
+            report.push(`Settings URL: ${EVENT_SETTINGS_URL}`);
+
+            try {
+                // Test 1: Settings
+                const t1 = new Date().getTime();
+                const res1 = await fetch(`${EVENT_SETTINGS_URL}?t=${t1}`);
+                report.push(`Settings API: ${res1.status} ${res1.statusText}`);
+                if (res1.ok) {
+                    const data = await res1.json();
+                    report.push(`Settings Data: OK (Title: ${data.event_title || 'N/A'})`);
+                }
+            } catch (e) {
+                report.push(`Settings Error: ${e.message}`);
+            }
+
+            try {
+                // Test 2: Manifest
+                const t2 = new Date().getTime();
+                const res2 = await fetch(`${MANIFEST_URL}?t=${t2}`);
+                report.push(`Manifest URL: ${MANIFEST_URL}`);
+                report.push(`Manifest API: ${res2.status} ${res2.statusText}`);
+                if (res2.ok) {
+                    const data = await res2.json();
+                    report.push(`Manifest Entries: ${data.length}`);
+                }
+            } catch (e) {
+                report.push(`Manifest Error: ${e.message}`);
+            }
+
+            alert(report.join('\n'));
+        }
 
         // Load event settings
         async function loadEventSettings() {
