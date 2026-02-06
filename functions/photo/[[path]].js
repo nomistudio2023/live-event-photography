@@ -32,7 +32,14 @@ export async function onRequest(context) {
 
   try {
     // 從 R2 取得物件
-    const object = await env.GALLERY.get(r2Path);
+    // 優先嘗試 PHOTOS (因為截圖顯示綁定名為 PHOTOS)，如果沒有則嘗試 GALLERY
+    const bucket = env.PHOTOS || env.GALLERY;
+
+    if (!bucket) {
+      throw new Error('R2 Bucket binding (PHOTOS or GALLERY) not found in Cloudflare Settings');
+    }
+
+    const object = await bucket.get(r2Path);
 
     if (!object) {
       return new Response('Photo not found', { status: 404 });
