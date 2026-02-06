@@ -95,20 +95,26 @@
                 <span class="text-green-400">🚀 <span id="stats-published">0</span></span>
             </div>
             <!-- Sync Status Indicator -->
-            <div id="sync-status" class="flex items-center gap-1.5 bg-gray-800 px-3 py-1.5 rounded border border-gray-700" title="R2 同步狀態">
+            <div id="sync-status"
+                class="flex items-center gap-1.5 bg-gray-800 px-3 py-1.5 rounded border border-gray-700"
+                title="R2 同步狀態">
                 <span id="sync-indicator" class="w-2 h-2 rounded-full bg-gray-500"></span>
                 <span id="sync-text" class="text-gray-500 text-xs">Sync</span>
             </div>
             <!-- Settings Button -->
-            <button onclick="openSettingsModal()" class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-yellow-400 font-bold border border-gray-700" title="設定">
+            <button onclick="openSettingsModal()"
+                class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-yellow-400 font-bold border border-gray-700"
+                title="設定">
                 ⚙️ 設定
             </button>
             <!-- Gallery Links Dropdown -->
             <div class="relative group">
-                <button class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
+                <button
+                    class="flex items-center gap-1 bg-gray-800 hover:bg-gray-700 hover:text-white px-3 py-1.5 rounded transition text-blue-400 font-bold border border-gray-700">
                     <span>↗</span> Open Gallery <span class="text-gray-500 ml-1">▾</span>
                 </button>
-                <div class="absolute right-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                <div
+                    class="absolute right-0 mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     <a href="/gallery" target="_blank"
                         class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white rounded-t-lg">
                         🖥️ 本地預覽
@@ -278,11 +284,13 @@
                         </div>
                         <div class="flex gap-2">
                             <button onclick="rotate(-90)"
-                                class="flex-1 h-6 bg-gray-700 hover:bg-gray-600 rounded text-sm transition" title="逆時針 90°">
+                                class="flex-1 h-6 bg-gray-700 hover:bg-gray-600 rounded text-sm transition"
+                                title="逆時針 90°">
                                 ↺
                             </button>
                             <button onclick="rotate(90)"
-                                class="flex-1 h-6 bg-gray-700 hover:bg-gray-600 rounded text-sm transition" title="順時針 90°">
+                                class="flex-1 h-6 bg-gray-700 hover:bg-gray-600 rounded text-sm transition"
+                                title="順時針 90°">
                                 ↻
                             </button>
                         </div>
@@ -342,12 +350,15 @@
     </main>
 
     <!-- Stats Modal -->
-    <div id="stats-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center" onclick="closeStatsModal(event)">
-        <div class="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl w-[400px] max-w-[90vw]" onclick="event.stopPropagation()">
+    <div id="stats-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden items-center justify-center"
+        onclick="closeStatsModal(event)">
+        <div class="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl w-[400px] max-w-[90vw]"
+            onclick="event.stopPropagation()">
             <!-- Modal Header -->
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-700">
                 <h3 class="text-lg font-bold text-white">📊 本次活動統計</h3>
-                <button onclick="closeStatsModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+                <button onclick="closeStatsModal()"
+                    class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
             </div>
             <!-- Modal Body -->
             <div class="p-5 space-y-4">
@@ -386,8 +397,47 @@
             </div>
             <!-- Modal Footer -->
             <div class="px-5 py-4 border-t border-gray-700 flex justify-end">
-                <button onclick="closeStatsModal()" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition">
+                <button onclick="closeStatsModal()"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition">
                     關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Confirm Modal -->
+    <div id="confirm-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden items-center justify-center p-4"
+        onclick="closeConfirmModal()">
+        <div class="bg-gray-800 border border-gray-600 rounded-xl shadow-2xl w-[400px] max-w-full"
+            onclick="event.stopPropagation()">
+            <!-- Icon -->
+            <div class="flex justify-center -mt-8">
+                <div class="bg-gray-800 border border-gray-600 rounded-full p-3">
+                    <div class="bg-red-900/50 rounded-full p-2 border border-red-500/30">
+                        <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                            </path>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center px-6 py-6 pt-2">
+                <h3 class="text-lg font-bold text-white mb-2">確認刪除？</h3>
+                <p id="confirm-msg" class="text-gray-400 text-sm">此操作無法復原。</p>
+            </div>
+
+            <!-- Footer -->
+            <div class="grid grid-cols-2 gap-0 border-t border-gray-700">
+                <button onclick="closeConfirmModal()"
+                    class="py-3 text-gray-400 hover:text-white hover:bg-gray-700 rounded-bl-xl transition font-medium border-r border-gray-700">
+                    取消
+                </button>
+                <button onclick="executeConfirm()"
+                    class="py-3 text-red-400 hover:text-white hover:bg-red-900/50 rounded-br-xl transition font-bold">
+                    確認刪除
                 </button>
             </div>
         </div>
@@ -444,6 +494,28 @@
             const modal = document.getElementById('stats-modal');
             modal.classList.add('hidden');
             modal.classList.remove('flex');
+        }
+
+        // --- Confirm Modal Logic ---
+        let pendingDeleteAction = null;
+
+        function showConfirmModal(msg, action) {
+            document.getElementById('confirm-msg').innerText = msg;
+            pendingDeleteAction = action;
+            const modal = document.getElementById('confirm-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            document.getElementById('confirm-modal').classList.remove('flex');
+            pendingDeleteAction = null;
+        }
+
+        function executeConfirm() {
+            if (pendingDeleteAction) pendingDeleteAction();
+            closeConfirmModal();
         }
 
         // --- Resizable Columns Logic ---
@@ -751,53 +823,55 @@
 
         async function deleteCurrent() {
             if (!currentFile) return;
-            if (!confirm(`確定要刪除 ${currentFile}？\n檔案將移至回收桶。`)) return;
 
-            try {
-                const res = await fetch('/api/reject', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: currentFile })
-                });
-                if (res.ok) {
-                    showToast('🗑 已刪除');
-                    sessionStats.deleted++;
-                    updateStatsDisplay();
-                    bufferList = bufferList.filter(f => f.filename !== currentFile);
-                    selectedFiles.delete(currentFile);
-                    currentFile = null;
-                    document.getElementById('preview-img').classList.add('hidden');
-                    document.getElementById('empty-state').classList.remove('hidden');
-                    document.getElementById('editor-dock').classList.add('opacity-50', 'pointer-events-none');
-                    renderBufferList();
-                }
-            } catch (e) { console.error(e); }
+            showConfirmModal(`確定要刪除 ${currentFile}？\n檔案將移至回收桶。`, async () => {
+                try {
+                    const res = await fetch('/api/reject', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: currentFile })
+                    });
+                    if (res.ok) {
+                        showToast('🗑 已刪除');
+                        sessionStats.deleted++;
+                        updateStatsDisplay();
+                        bufferList = bufferList.filter(f => f.filename !== currentFile);
+                        selectedFiles.delete(currentFile);
+                        currentFile = null;
+                        document.getElementById('preview-img').classList.add('hidden');
+                        document.getElementById('empty-state').classList.remove('hidden');
+                        document.getElementById('editor-dock').classList.add('opacity-50', 'pointer-events-none');
+                        renderBufferList();
+                    }
+                } catch (e) { console.error(e); }
+            });
         }
 
         async function batchDelete() {
             const files = Array.from(selectedFiles);
             if (files.length === 0) return;
-            if (!confirm(`確定要刪除 ${files.length} 張照片？\n檔案將移至回收桶。`)) return;
 
-            showToast(`⏳ 刪除中 ${files.length}...`);
-            let success = 0;
-            for (const fname of files) {
-                try {
-                    const res = await fetch('/api/reject', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename: fname })
-                    });
-                    if (res.ok) success++;
-                } catch (e) { console.error(e); }
-            }
+            showConfirmModal(`確定要刪除 ${files.length} 張照片？\n檔案將移至回收桶。`, async () => {
+                showToast(`⏳ 刪除中 ${files.length}...`);
+                let success = 0;
+                for (const fname of files) {
+                    try {
+                        const res = await fetch('/api/reject', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ filename: fname })
+                        });
+                        if (res.ok) success++;
+                    } catch (e) { console.error(e); }
+                }
 
-            showToast(`🗑 已刪除 ${success} 張`);
-            sessionStats.deleted += success;
-            updateStatsDisplay();
-            selectedFiles.clear();
-            document.getElementById('select-all').checked = false;
-            fetchBuffer();
+                showToast(`🗑 已刪除 ${success} 張`);
+                sessionStats.deleted += success;
+                updateStatsDisplay();
+                selectedFiles.clear();
+                document.getElementById('select-all').checked = false;
+                fetchBuffer();
+            });
         }
 
         async function batchPublish() {
@@ -825,20 +899,25 @@
         }
 
         async function unpublishImage(filename) {
-            if (!confirm('Unpublish this photo?')) return;
-            try {
-                const res = await fetch('/api/unpublish', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: filename })
-                });
-                if (res.ok) {
-                    showToast('🗑 Unpublished');
-                    fetchLive();
-                }
-            } catch (e) { console.error(e); }
+            showConfirmModal(`確定要下架 ${filename}？\n照片將從線上移除，但保留在 Inbox 中。`, async () => {
+                try {
+                    const res = await fetch('/api/unpublish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename: filename })
+                    });
+                    if (res.ok) {
+                        showToast('🗑 已下架');
+                        // ... existing logic ...
+                        sessionStats.published--;
+                        updateStatsDisplay();
+                        // Force refresh buffer to show the image as unpublished
+                        fetchBuffer();
+                        fetchLive();
+                    }
+                } catch (e) { console.error(e); }
+            });
         }
-
         // --- Live Feed ---
         // --- Live Feed & Published History ---
         async function fetchLive() {
@@ -875,7 +954,7 @@
                             onclick="unpublishImage('${item.filename}')">
                             <div class="flex flex-col items-center text-white">
                             <svg class="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                            <span class="text-xs font-bold uppercase tracking-widest">Unpublish</span>
+                            <span class="text-xs font-bold uppercase tracking-widest">取消發佈</span>
                             </div>
                         </div>
                 </div>
@@ -1009,7 +1088,7 @@
         async function openSettingsModal() {
             const modal = document.getElementById('settings-modal');
             modal.classList.remove('hidden');
-            
+
             // Load current settings
             await loadEventSettings();
             await loadWatermarkSettings();
@@ -1067,10 +1146,10 @@
                 showToast('❌ 請選擇圖片');
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             try {
                 const res = await fetch('/api/upload-hero-image', {
                     method: 'POST',
@@ -1098,10 +1177,10 @@
                 showToast('❌ 請選擇圖片');
                 return;
             }
-            
+
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
+
             try {
                 const res = await fetch('/api/upload-watermark', {
                     method: 'POST',
@@ -1248,13 +1327,13 @@
             if (!confirm('確定要清理隱藏文件嗎？\n\n這會：\n1. 刪除所有 ._ 開頭的文件\n2. 重新生成 manifest.json')) {
                 return;
             }
-            
+
             try {
                 const res = await fetch('/api/cleanup-hidden-files', {
                     method: 'POST'
                 });
                 const data = await res.json();
-                
+
                 if (res.ok) {
                     showToast('✅ ' + data.message);
                     // Refresh live feed to see updated manifest
@@ -1272,13 +1351,13 @@
             try {
                 const res = await fetch('/api/deployment-status');
                 const data = await res.json();
-                
+
                 const section = document.getElementById('deployment-section');
                 const badge = document.getElementById('deployment-status-badge');
-                
+
                 if (data.repo_exists) {
                     section.classList.remove('hidden');
-                    
+
                     if (data.has_changes) {
                         badge.textContent = '有變更';
                         badge.className = 'text-xs px-2 py-1 rounded bg-yellow-600 text-white';
@@ -1307,7 +1386,7 @@
 4. 觸發 Cloudflare Pages 自動部署（約 1-3 分鐘）
 
 ⚠️ 請確保已設定 Git 認證（SSH key 或 Personal Access Token）`;
-            
+
             if (confirm(message)) {
                 deployToCloudflare();
             }
@@ -1318,13 +1397,13 @@
             const originalText = button.textContent;
             button.disabled = true;
             button.textContent = '部署中...';
-            
+
             try {
                 const res = await fetch('/api/deploy-to-cloudflare', {
                     method: 'POST'
                 });
                 const data = await res.json();
-                
+
                 if (res.ok) {
                     if (data.status === 'success') {
                         showToast('✅ ' + data.message);
@@ -1336,10 +1415,10 @@
                 } else {
                     const errorMsg = data.detail || 'Unknown error';
                     showToast('❌ 部署失敗');
-                    
+
                     // Show detailed error dialog
                     let alertMsg = '部署失敗\n\n' + errorMsg;
-                    
+
                     if (res.status === 401) {
                         alertMsg += '\n\n請確保已設定：\n1. SSH key（推薦）\n2. 或 Personal Access Token\n\n詳細設定請參考 DEPLOYMENT_GUIDE.md';
                     } else if (res.status === 404) {
@@ -1347,7 +1426,7 @@
                     } else if (res.status === 400) {
                         alertMsg += '\n\n請檢查 Git 設定';
                     }
-                    
+
                     alert(alertMsg);
                 }
             } catch (e) {
@@ -1364,12 +1443,14 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="hidden fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-700">
-            <div class="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between z-10">
+        <div
+            class="bg-gray-800 rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-gray-700">
+            <div
+                class="sticky top-0 bg-gray-800 border-b border-gray-700 px-6 py-4 flex items-center justify-between z-10">
                 <h2 class="text-xl font-bold text-white">⚙️ 系統設定</h2>
                 <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-white text-2xl">&times;</button>
             </div>
-            
+
             <div class="p-6 space-y-6">
                 <!-- Event Settings -->
                 <section class="border-b border-gray-700 pb-6">
@@ -1377,34 +1458,53 @@
                     <div class="space-y-3">
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">活動標題</label>
-                            <input type="text" id="event-title-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="LIVE EVENT 2026">
+                            <input type="text" id="event-title-input"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="LIVE EVENT 2026">
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">活動副標題</label>
-                            <input type="text" id="event-subtitle-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="即時活動花絮・精彩瞬間">
+                            <input type="text" id="event-subtitle-input"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="即時活動花絮・精彩瞬間">
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">標題字型</label>
-                            <input type="text" id="title-font-family-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2" placeholder="Arial, sans-serif">
+                            <input type="text" id="title-font-family-input"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2"
+                                placeholder="Arial, sans-serif">
                             <label class="block text-sm text-gray-300 mb-1">標題字體大小 (px)</label>
-                            <input type="number" id="title-font-size-input" min="24" max="120" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <input type="number" id="title-font-size-input" min="24" max="120"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">副標題字型</label>
-                            <input type="text" id="subtitle-font-family-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2" placeholder="Arial, sans-serif">
+                            <input type="text" id="subtitle-font-family-input"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2"
+                                placeholder="Arial, sans-serif">
                             <label class="block text-sm text-gray-300 mb-1">副標題字體大小 (px)</label>
-                            <input type="number" id="subtitle-font-size-input" min="12" max="48" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <input type="number" id="subtitle-font-size-input" min="12" max="48"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">背景圖片 URL</label>
-                            <input type="text" id="hero-image-url-input" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2" placeholder="https://...">
+                            <input type="text" id="hero-image-url-input"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2"
+                                placeholder="https://...">
                             <label class="block text-sm text-gray-300 mb-1">或上傳本地圖片</label>
-                            <input type="file" id="hero-image-upload" accept="image/*" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
-                            <button onclick="uploadHeroImage()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤 上傳背景圖片</button>
+                            <input type="file" id="hero-image-upload" accept="image/*"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <button onclick="uploadHeroImage()"
+                                class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤
+                                上傳背景圖片</button>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="saveEventSettings()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存活動設定</button>
-                            <button onclick="checkDeploymentStatus()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition" title="檢查部署狀態">🔍</button>
+                            <button onclick="saveEventSettings()"
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾
+                                儲存活動設定</button>
+                            <button onclick="checkDeploymentStatus()"
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded transition"
+                                title="檢查部署狀態">🔍</button>
                         </div>
                         <!-- Cleanup Section -->
                         <div class="mt-4 p-4 bg-gray-700 rounded border border-gray-600">
@@ -1412,7 +1512,9 @@
                                 <span class="text-sm font-semibold text-white">🧹 清理工具</span>
                             </div>
                             <p class="text-xs text-gray-400 mb-3">清理 macOS 隱藏文件（._ 開頭）並更新 manifest</p>
-                            <button onclick="cleanupHiddenFiles()" class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition font-semibold">🧹 清理隱藏文件</button>
+                            <button onclick="cleanupHiddenFiles()"
+                                class="w-full bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition font-semibold">🧹
+                                清理隱藏文件</button>
                         </div>
                         <!-- Deployment Section -->
                         <div id="deployment-section" class="mt-4 p-4 bg-gray-700 rounded border border-gray-600 hidden">
@@ -1421,7 +1523,9 @@
                                 <span id="deployment-status-badge" class="text-xs px-2 py-1 rounded"></span>
                             </div>
                             <p class="text-xs text-gray-400 mb-3">將活動設定推送到 GitHub，觸發 Cloudflare Pages 自動部署</p>
-                            <button onclick="confirmDeploy()" class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition font-semibold">🚀 部署到 Cloudflare</button>
+                            <button onclick="confirmDeploy()"
+                                class="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition font-semibold">🚀
+                                部署到 Cloudflare</button>
                         </div>
                     </div>
                 </section>
@@ -1431,31 +1535,40 @@
                     <h3 class="text-lg font-semibold text-white mb-4">💧 浮水印設定</h3>
                     <div class="space-y-3">
                         <div class="flex items-center gap-2">
-                            <input type="checkbox" id="watermark-enabled" class="rounded bg-gray-700 border-gray-600 text-blue-500">
+                            <input type="checkbox" id="watermark-enabled"
+                                class="rounded bg-gray-700 border-gray-600 text-blue-500">
                             <label class="text-sm text-gray-300">啟用浮水印</label>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">浮水印類型</label>
-                            <select id="watermark-type" onchange="updateWatermarkTypeUI()" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <select id="watermark-type" onchange="updateWatermarkTypeUI()"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                                 <option value="image">圖片浮水印</option>
                                 <option value="text">文字浮水印</option>
                             </select>
                         </div>
                         <div id="watermark-text-group" class="hidden">
                             <label class="block text-sm text-gray-300 mb-1">浮水印文字</label>
-                            <input type="text" id="watermark-text" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="輸入浮水印文字">
+                            <input type="text" id="watermark-text"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                placeholder="輸入浮水印文字">
                             <label class="block text-sm text-gray-300 mb-1 mt-2">字體大小</label>
-                            <input type="number" id="watermark-font-size" min="12" max="72" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <input type="number" id="watermark-font-size" min="12" max="72"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                         </div>
                         <div id="watermark-image-group">
                             <p class="text-xs text-gray-400 mb-2">圖片浮水印使用 assets/watermark.png</p>
                             <label class="block text-sm text-gray-300 mb-1">上傳浮水印圖片 (PNG/JPG, 建議透明背景)</label>
-                            <input type="file" id="watermark-image-upload" accept="image/png,image/jpeg,image/jpg" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
-                            <button onclick="uploadWatermarkImage()" class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤 上傳浮水印</button>
+                            <input type="file" id="watermark-image-upload" accept="image/png,image/jpeg,image/jpg"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <button onclick="uploadWatermarkImage()"
+                                class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤
+                                上傳浮水印</button>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">位置</label>
-                            <select id="watermark-position" class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
+                            <select id="watermark-position"
+                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                                 <option value="top-left">左上</option>
                                 <option value="top-center">中上</option>
                                 <option value="top-right">右上</option>
@@ -1466,18 +1579,29 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm text-gray-300 mb-1">透明度: <span id="opacity-value">80</span>%</label>
-                            <input type="range" id="watermark-opacity" min="0" max="100" value="80" oninput="document.getElementById('opacity-value').textContent = this.value" class="w-full">
+                            <label class="block text-sm text-gray-300 mb-1">透明度: <span
+                                    id="opacity-value">80</span>%</label>
+                            <input type="range" id="watermark-opacity" min="0" max="100" value="80"
+                                oninput="document.getElementById('opacity-value').textContent = this.value"
+                                class="w-full">
                         </div>
                         <div>
-                            <label class="block text-sm text-gray-300 mb-1">大小: <span id="scale-value">20</span>%</label>
-                            <input type="range" id="watermark-scale" min="5" max="50" value="20" oninput="document.getElementById('scale-value').textContent = this.value" class="w-full">
+                            <label class="block text-sm text-gray-300 mb-1">大小: <span
+                                    id="scale-value">20</span>%</label>
+                            <input type="range" id="watermark-scale" min="5" max="50" value="20"
+                                oninput="document.getElementById('scale-value').textContent = this.value"
+                                class="w-full">
                         </div>
                         <div>
-                            <label class="block text-sm text-gray-300 mb-1">邊距: <span id="margin-value">50</span>px</label>
-                            <input type="range" id="watermark-margin" min="0" max="200" value="50" oninput="document.getElementById('margin-value').textContent = this.value" class="w-full">
+                            <label class="block text-sm text-gray-300 mb-1">邊距: <span
+                                    id="margin-value">50</span>px</label>
+                            <input type="range" id="watermark-margin" min="0" max="200" value="50"
+                                oninput="document.getElementById('margin-value').textContent = this.value"
+                                class="w-full">
                         </div>
-                        <button onclick="saveWatermarkSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存浮水印設定</button>
+                        <button onclick="saveWatermarkSettings()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾
+                            儲存浮水印設定</button>
                     </div>
                 </section>
 
@@ -1488,8 +1612,12 @@
                         <div class="bg-gray-700 p-4 rounded border border-gray-600">
                             <p class="text-sm text-gray-300 mb-3">服務器狀態管理</p>
                             <div class="flex gap-2">
-                                <button onclick="restartServer()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition text-sm">🔄 重啟服務器</button>
-                                <button onclick="showServerInfo()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition text-sm">ℹ️ 服務器資訊</button>
+                                <button onclick="restartServer()"
+                                    class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition text-sm">🔄
+                                    重啟服務器</button>
+                                <button onclick="showServerInfo()"
+                                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition text-sm">ℹ️
+                                    服務器資訊</button>
                             </div>
                             <p class="text-xs text-gray-400 mt-3">⚠️ 重啟服務器會中斷當前連接，請謹慎操作</p>
                         </div>
@@ -1504,32 +1632,46 @@
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">Buffer 資料夾（拍攝照片輸入）</label>
                             <div class="flex gap-2">
-                                <input type="text" id="buffer-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_buffer">
-                                <button onclick="selectFolder('buffer-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                                <input type="text" id="buffer-folder-input"
+                                    class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                    placeholder="./photos_buffer">
+                                <button onclick="selectFolder('buffer-folder-input')"
+                                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">Web 資料夾（已發布照片）</label>
                             <div class="flex gap-2">
-                                <input type="text" id="web-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_web">
-                                <button onclick="selectFolder('web-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                                <input type="text" id="web-folder-input"
+                                    class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                    placeholder="./photos_web">
+                                <button onclick="selectFolder('web-folder-input')"
+                                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">Trash 資料夾（已刪除照片）</label>
                             <div class="flex gap-2">
-                                <input type="text" id="trash-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_trash">
-                                <button onclick="selectFolder('trash-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                                <input type="text" id="trash-folder-input"
+                                    class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                    placeholder="./photos_trash">
+                                <button onclick="selectFolder('trash-folder-input')"
+                                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm text-gray-300 mb-1">Archive 資料夾（封存照片）</label>
                             <div class="flex gap-2">
-                                <input type="text" id="archive-folder-input" class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none" placeholder="./photos_archive">
-                                <button onclick="selectFolder('archive-folder-input')" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
+                                <input type="text" id="archive-folder-input"
+                                    class="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                    placeholder="./photos_archive">
+                                <button onclick="selectFolder('archive-folder-input')"
+                                    class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded border border-gray-600">選擇</button>
                             </div>
                         </div>
-                        <button onclick="saveFolderSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾 儲存資料夾設定</button>
+                        <button onclick="saveFolderSettings()"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">💾
+                            儲存資料夾設定</button>
                     </div>
                 </section>
             </div>

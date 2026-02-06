@@ -240,19 +240,25 @@
         }
 
         @keyframes bounce {
-            0%, 100% {
+
+            0%,
+            100% {
                 transform: translateY(0);
             }
+
             50% {
                 transform: translateY(-20px);
             }
         }
 
         @keyframes pulse-dot {
-            0%, 100% {
+
+            0%,
+            100% {
                 opacity: 0.4;
                 transform: scale(0.8);
             }
+
             50% {
                 opacity: 1;
                 transform: scale(1);
@@ -500,10 +506,10 @@
                     const settings = await response.json();
                     const titleEl = document.getElementById('event-title');
                     const subtitleEl = document.getElementById('event-subtitle');
-                    
+
                     titleEl.textContent = settings.event_title || 'LIVE EVENT 2026';
                     subtitleEl.textContent = settings.event_subtitle || '即時活動花絮・精彩瞬間';
-                    
+
                     // Apply font settings
                     if (settings.title_font_family) {
                         titleEl.style.fontFamily = settings.title_font_family;
@@ -517,7 +523,7 @@
                     if (settings.subtitle_font_size) {
                         subtitleEl.style.fontSize = `${settings.subtitle_font_size}px`;
                     }
-                    
+
                     // Update hero background image (prefer uploaded, fallback to URL)
                     const heroSection = document.getElementById('hero-section');
                     const imageUrl = settings.hero_image_uploaded || settings.hero_image_url;
