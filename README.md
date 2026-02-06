@@ -127,13 +127,18 @@ live-event-photography/
 
 ---
 
-## 🌐 雲端部署
+## 🌐 雲端部署 (Cloudflare)
 
-本系統使用 **Cloudflare R2 + Pages** 進行雲端部署：
+本系統使用 **Cloudflare R2 + Pages** 進行部署。為了確保功能正常，請務必按照以下步驟設定：
 
-1. R2 儲存照片
-2. Pages Function 代理 R2 存取
-3. 自動每 3 秒同步新照片
+### 1. R2 儲存桶綁定 (重要)
+在 Cloudflare Pages 專案設定中，必須手動加入 R2 綁定：
+- **變數名稱 (Variable name)**: `PHOTOS`
+- **R2 儲存桶**: 選擇您的照片儲存桶 (例如 `nomilivegallery`)
+
+### 2. 資料路徑與同步
+- 自動同步：`sync_to_r2.py` 會自動每 3 秒同步照片，並每 30 秒同步一次設定檔 (`event_settings.json`) 至 R2。
+- 代理讀取：線上頁面透過 `functions/photo/[[path]].js` 讀取 R2 中的靜態資源。
 
 詳見 [docs/R2_SETUP_GUIDE.md](docs/R2_SETUP_GUIDE.md)
 
