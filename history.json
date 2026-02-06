@@ -401,11 +401,11 @@
   },
   "IMGC8835.jpg": {
     "published": 3,
-    "unpublished": 1
+    "unpublished": 2
   },
   "IMGC8838.jpg": {
     "published": 2,
-    "unpublished": 1
+    "unpublished": 2
   },
   "IMGC8837.jpg": {
     "published": 2,
@@ -416,7 +416,23 @@
     "unpublished": 1
   },
   "IMGC8833.jpg": {
-    "published": 1,
+    "published": 2,
     "unpublished": 1
+  },
+  "23A_2237.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "23A_2238.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "23A_2239.jpg": {
+    "published": 1,
+    "unpublished": 0
+  },
+  "23A_2236.jpg": {
+    "published": 1,
+    "unpublished": 0
   }
 }
