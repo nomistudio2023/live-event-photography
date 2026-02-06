@@ -1106,11 +1106,25 @@
                 const data = await res.json();
                 document.getElementById('event-title-input').value = data.event_title || '';
                 document.getElementById('event-subtitle-input').value = data.event_subtitle || '';
-                document.getElementById('hero-image-url-input').value = data.hero_image_url || '';
                 document.getElementById('title-font-family-input').value = data.title_font_family || 'Arial, sans-serif';
                 document.getElementById('title-font-size-input').value = data.title_font_size || 56;
                 document.getElementById('subtitle-font-family-input').value = data.subtitle_font_family || 'Arial, sans-serif';
                 document.getElementById('subtitle-font-size-input').value = data.subtitle_font_size || 20;
+                document.getElementById('hero-image-url-input').value = data.hero_image_url || '';
+
+                // Update Hero Preview
+                const previewContainer = document.getElementById('hero-preview-container');
+                const previewImg = document.getElementById('hero-preview-img');
+                const previewType = document.getElementById('hero-preview-type');
+
+                const activeImage = data.hero_image_uploaded || data.hero_image_url;
+                if (activeImage) {
+                    previewContainer.classList.remove('hidden');
+                    previewImg.src = activeImage + (activeImage.startsWith('/') ? '?t=' + new Date().getTime() : '');
+                    previewType.innerText = data.hero_image_uploaded ? '✅ 已上傳' : '🔗 URL 模式';
+                } else {
+                    previewContainer.classList.add('hidden');
+                }
             } catch (e) {
                 console.error('Failed to load event settings:', e);
             }
@@ -1151,6 +1165,7 @@
             formData.append('file', fileInput.files[0]);
 
             try {
+                showToast('⏳ 上傳中...');
                 const res = await fetch('/api/upload-hero-image', {
                     method: 'POST',
                     body: formData
@@ -1158,9 +1173,7 @@
                 const data = await res.json();
                 if (res.ok) {
                     showToast('✅ 背景圖片上傳成功');
-                    // Update URL input with uploaded image URL
-                    document.getElementById('hero-image-url-input').value = '';
-                    // Reload settings to show new image
+                    fileInput.value = ''; // Clear input
                     await loadEventSettings();
                 } else {
                     showToast('❌ 上傳失敗: ' + (data.detail || 'Unknown error'));
@@ -1169,6 +1182,20 @@
                 console.error('Failed to upload hero image:', e);
                 showToast('❌ 上傳失敗');
             }
+        }
+
+        async function deleteHeroImage() {
+            showConfirmModal('確定要移除上傳的背景圖片並恢復使用網址嗎？', async () => {
+                try {
+                    const res = await fetch('/api/delete-hero-image', {
+                        method: 'POST'
+                    });
+                    if (res.ok) {
+                        showToast('🗑 已移除上傳圖片');
+                        await loadEventSettings();
+                    }
+                } catch (e) { console.error(e); }
+            });
         }
 
         async function uploadWatermarkImage() {
@@ -1486,17 +1513,45 @@
                             <input type="number" id="subtitle-font-size-input" min="12" max="48"
                                 class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
                         </div>
-                        <div>
-                            <label class="block text-sm text-gray-300 mb-1">背景圖片 URL</label>
-                            <input type="text" id="hero-image-url-input"
-                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none mb-2"
-                                placeholder="https://...">
-                            <label class="block text-sm text-gray-300 mb-1">或上傳本地圖片</label>
-                            <input type="file" id="hero-image-upload" accept="image/*"
-                                class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none">
-                            <button onclick="uploadHeroImage()"
-                                class="mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition text-sm">📤
-                                上傳背景圖片</button>
+                        <div class="bg-gray-750 p-4 rounded border border-gray-700 space-y-3">
+                            <label
+                                class="block text-sm font-bold text-gray-400 uppercase tracking-widest">背景圖片設定</label>
+
+                            <!-- Current Preview -->
+                            <div id="hero-preview-container"
+                                class="relative w-full h-32 bg-gray-900 rounded overflow-hidden border border-gray-600 hidden">
+                                <img id="hero-preview-img" class="w-full h-full object-cover opacity-60">
+                                <div class="absolute inset-0 flex items-center justify-center">
+                                    <span id="hero-preview-type"
+                                        class="text-[10px] bg-black/60 px-2 py-1 rounded text-white font-mono"></span>
+                                </div>
+                                <button onclick="deleteHeroImage()" title="移除上傳圖片，恢復使用網址"
+                                    class="absolute top-2 right-2 bg-red-600/80 hover:bg-red-600 p-1.5 rounded-full text-white transition shadow-lg">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                        </path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">背景圖片 URL (當沒有上傳檔案時使用)</label>
+                                <input type="text" id="hero-image-url-input"
+                                    class="w-full bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-sm"
+                                    placeholder="https://...">
+                            </div>
+
+                            <div class="pt-2 border-t border-gray-700">
+                                <label class="block text-xs text-gray-500 mb-1">上傳新背景圖片</label>
+                                <div class="flex gap-2">
+                                    <input type="file" id="hero-image-upload" accept="image/*"
+                                        class="flex-1 bg-gray-700 text-white px-3 py-1.5 rounded border border-gray-600 focus:border-blue-500 focus:outline-none text-sm">
+                                    <button onclick="uploadHeroImage()"
+                                        class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded transition text-sm font-bold">📤
+                                        上傳</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="flex gap-2">
                             <button onclick="saveEventSettings()"

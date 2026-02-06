@@ -1099,6 +1099,34 @@ async def upload_hero_image(file: UploadFile = File(...)):
         logger.error(f"Failed to upload hero image: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/delete-hero-image")
+async def delete_hero_image():
+    """Clear uploaded hero image and reset to URL mode"""
+    try:
+        settings = load_event_settings()
+        uploaded_path = settings.get("hero_image_uploaded")
+        
+        if uploaded_path:
+            # Optional: Delete the actual file from assets/ to save space
+            # Path looks like /assets/hero_bg_123.jpg
+            filename = os.path.basename(uploaded_path)
+            assets_path = os.path.join(CONFIG.get("assets_folder", "./assets"), filename)
+            web_assets_path = os.path.join(CONFIG.get("web_folder", "./photos_web"), "assets", filename)
+            
+            if os.path.exists(assets_path):
+                try: os.remove(assets_path)
+                except: pass
+            if os.path.exists(web_assets_path):
+                try: os.remove(web_assets_path)
+                except: pass
+        
+        settings["hero_image_uploaded"] = None
+        save_event_settings(settings)
+        return {"status": "success", "message": "Hero image cleared"}
+    except Exception as e:
+        logger.error(f"Failed to delete hero image: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/upload-watermark")
 async def upload_watermark(file: UploadFile = File(...)):
     """Upload watermark image"""

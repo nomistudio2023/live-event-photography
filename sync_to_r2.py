@@ -237,27 +237,31 @@ def full_sync():
 
 def sync_static_files():
     """同步靜態資源 (event_settings.json, assets/)"""
-    # 1. Sync event_settings.json
-    settings_file = LOCAL_PHOTOS_DIR / "event_settings.json"
+    project_root = Path(__file__).parent
+    
+    # 1. Sync config/event_settings.json
+    settings_file = project_root / "config" / "event_settings.json"
     if settings_file.exists():
         try:
+            print(f"🔄 同步設定檔: {settings_file.name}")
             subprocess.run(
                 ["rclone", "copy", str(settings_file), f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/"],
                 capture_output=True, timeout=30
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️  同步設定檔失敗: {e}")
 
     # 2. Sync assets folder
-    assets_dir = LOCAL_PHOTOS_DIR / "assets"
+    assets_dir = project_root / "assets"
     if assets_dir.exists():
         try:
+            print(f"🔄 同步靜態資源目錄: {assets_dir.name}")
             subprocess.run(
                 ["rclone", "copy", str(assets_dir), f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/assets/"],
                 capture_output=True, timeout=60
             )
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"⚠️  同步靜態資源失敗: {e}")
 
 
 def main():
@@ -278,6 +282,8 @@ def main():
     # 初始化：取得目前狀態
     previous_local = get_local_photos()
     print(f"📸 本地照片: {len(previous_local)} 張")
+    
+    static_sync_counter = 0
 
     r2_photos = get_r2_photos()
     print(f"☁️  R2 照片: {len(r2_photos)} 張")
@@ -358,6 +364,12 @@ def main():
                 else:
                     if update_r2_manifest(current_local):
                         print(f"   📋 Manifest 已更新 ({len(current_local)} 張照片)")
+
+                # 每 10 次迴圈 (約 30 秒) 同步一次靜態資源
+                static_sync_counter += 1
+                if static_sync_counter >= 10:
+                    sync_static_files()
+                    static_sync_counter = 0
 
                 previous_local = current_local
                 print()
