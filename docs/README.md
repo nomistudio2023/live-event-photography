@@ -15,6 +15,7 @@ docs/
 ├── dev/              開發者文件
 │   ├── plans/        開發計劃（帶日期）
 │   └── logs/         開發日誌（帶日期）
+├── learning/         學習紀錄（問答、概念筆記）
 └── archive/          歷史紀錄
 ```
 
@@ -60,8 +61,17 @@ docs/
 
 | 文件 | 說明 |
 |------|------|
+| [2026-02-11-r2-prefix-hardcode-fix.md](./dev/logs/2026-02-11-r2-prefix-hardcode-fix.md) | R2 path prefix 硬編碼修復 + bootstrap 錯誤處理 |
 | [2026-02-11-spec-kit-and-docs-restructure.md](./dev/logs/2026-02-11-spec-kit-and-docs-restructure.md) | 文件重整、導入 Spec-Kit、P2 功能規格撰寫 |
 | [2026-02-06-update.md](./dev/logs/2026-02-06-update.md) | Hero Banner 同步優化與管理介面更新 |
+
+---
+
+## 📝 Learning — 學習紀錄
+
+| 文件 | 說明 |
+|------|------|
+| [2026-02-11-what-is-constitution-aware-bug-fix-skill.md](./learning/2026-02-11-what-is-constitution-aware-bug-fix-skill.md) | 從 Bug 修復過程提煉 Agent Skill 的概念與實作 |
 
 ---
 
