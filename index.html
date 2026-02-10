@@ -754,37 +754,130 @@
             if (touchEndX - touchStartX > 50) inputNav(-1); // Right Swipe (Prev)
         }, { passive: true });
 
+        // Show bootstrap error in gallery area (user-visible)
+        function showBootstrapError(message) {
+            const gallery = document.getElementById('gallery');
+            const featuredSection = document.getElementById('featured-section');
+            featuredSection.style.display = 'none';
+
+            const errorState = document.createElement('div');
+            errorState.className = 'empty-state';
+            errorState.id = 'bootstrap-error';
+
+            const content = document.createElement('div');
+            content.className = 'empty-state-content';
+
+            const icon = document.createElement('div');
+            icon.className = 'empty-state-icon';
+            icon.textContent = '\u26A0\uFE0F';
+            icon.style.animation = 'none';
+
+            const title = document.createElement('h2');
+            title.className = 'empty-state-title';
+            title.style.background = 'linear-gradient(135deg, #f59e0b, #ef4444)';
+            title.style.webkitBackgroundClip = 'text';
+            title.style.backgroundClip = 'text';
+            title.textContent = message;
+
+            const subtitle = document.createElement('p');
+            subtitle.className = 'empty-state-subtitle';
+            subtitle.textContent = '\u9801\u9762\u5C07\u5728\u5E7E\u79D2\u5F8C\u81EA\u52D5\u91CD\u8A66\u2026';
+
+            content.appendChild(icon);
+            content.appendChild(title);
+            content.appendChild(subtitle);
+            errorState.appendChild(content);
+
+            gallery.replaceChildren(errorState);
+        }
+
+        // Clear bootstrap error if present
+        function clearBootstrapError() {
+            const err = document.getElementById('bootstrap-error');
+            if (err) err.remove();
+        }
+
+        // Attempt online bootstrap: fetch settings from R2 root to discover r2_path_prefix
+        // Returns true on success, false on failure
+        async function bootstrapOnline() {
+            try {
+                const res = await fetch(`${BOOTSTRAP_SETTINGS_URL}?t=${Date.now()}`);
+                if (!res.ok) {
+                    console.error(`Bootstrap fetch failed: HTTP ${res.status}`);
+                    return false;
+                }
+                const settings = await res.json();
+                const prefix = settings.r2_path_prefix;
+                if (!prefix) {
+                    console.error('r2_path_prefix missing from bootstrap settings');
+                    return false;
+                }
+                MANIFEST_URL = `/photo/${prefix}/manifest.json`;
+                IMAGE_BASE_URL = `/photo/${prefix}/`;
+                EVENT_SETTINGS_URL = `/photo/${prefix}/event_settings.json`;
+                applyEventSettings(settings);
+                return true;
+            } catch (e) {
+                console.error('Bootstrap network error:', e);
+                return false;
+            }
+        }
+
         // Bootstrap: discover r2_path_prefix and initialize the app
+        const BOOTSTRAP_MAX_RETRIES = 5;
+        const BOOTSTRAP_RETRY_DELAYS = [2000, 4000, 8000, 15000, 30000]; // exponential backoff
+
         async function initApp() {
+            let bootstrapped = true;
+
             if (!isLocal) {
-                // Online mode: fetch settings from fixed R2 root path to discover r2_path_prefix
-                try {
-                    const res = await fetch(`${BOOTSTRAP_SETTINGS_URL}?t=${Date.now()}`);
-                    if (res.ok) {
-                        const settings = await res.json();
-                        const prefix = settings.r2_path_prefix;
-                        if (prefix) {
-                            MANIFEST_URL = `/photo/${prefix}/manifest.json`;
-                            IMAGE_BASE_URL = `/photo/${prefix}/`;
-                            EVENT_SETTINGS_URL = `/photo/${prefix}/event_settings.json`;
-                        } else {
-                            console.warn('r2_path_prefix not found in bootstrap settings, gallery may not load');
-                        }
-                        // Apply settings immediately (avoids redundant second fetch)
-                        applyEventSettings(settings);
-                    }
-                } catch (e) {
-                    console.error('Bootstrap failed:', e);
+                // Online mode: bootstrap with retries
+                bootstrapped = await bootstrapOnline();
+
+                if (!bootstrapped) {
+                    showBootstrapError('\u7121\u6CD5\u8F09\u5165\u76F8\u7C3F\u8A2D\u5B9A');
+                    // Schedule retries in background
+                    retryBootstrap(1);
+                    return; // Don't start polling until bootstrap succeeds
                 }
             } else {
                 // Local mode: URLs already configured, load settings from API
                 await loadEventSettings();
             }
 
-            // Start periodic settings refresh
-            setInterval(loadEventSettings, 30000);
+            startPolling();
+        }
 
-            // Start photo polling
+        // Retry bootstrap with exponential backoff
+        function retryBootstrap(attempt) {
+            if (attempt > BOOTSTRAP_MAX_RETRIES) {
+                // All retries exhausted — update error message
+                const subtitle = document.querySelector('#bootstrap-error .empty-state-subtitle');
+                if (subtitle) {
+                    subtitle.textContent = '\u8ACB\u6AA2\u67E5\u7DB2\u8DEF\u9023\u7DDA\u5F8C\u91CD\u65B0\u6574\u7406\u9801\u9762';
+                }
+                // Continue retrying at slowest interval (every 30s) in case service recovers
+                setTimeout(() => retryBootstrap(BOOTSTRAP_MAX_RETRIES), 30000);
+                return;
+            }
+
+            const delay = BOOTSTRAP_RETRY_DELAYS[Math.min(attempt - 1, BOOTSTRAP_RETRY_DELAYS.length - 1)];
+            console.log(`Bootstrap retry ${attempt}/${BOOTSTRAP_MAX_RETRIES} in ${delay}ms`);
+
+            setTimeout(async () => {
+                const ok = await bootstrapOnline();
+                if (ok) {
+                    clearBootstrapError();
+                    startPolling();
+                } else {
+                    retryBootstrap(attempt + 1);
+                }
+            }, delay);
+        }
+
+        // Start periodic polling (called only after successful bootstrap)
+        function startPolling() {
+            setInterval(loadEventSettings, 30000);
             fetchPhotos();
             setInterval(fetchPhotos, 3000);
         }
