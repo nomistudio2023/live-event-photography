@@ -490,58 +490,55 @@
     <script>
         // 自動檢測環境：本地開發或線上部署
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-        const MANIFEST_URL = isLocal ? 'photos_web/manifest.json' : '/photo/2026-01-20/manifest.json';
-        const IMAGE_BASE_URL = isLocal ? 'photos_web/' : '/photo/2026-01-20/';
-        const EVENT_SETTINGS_URL = isLocal ? '/api/event-settings' : '/photo/2026-01-20/event_settings.json';
+
+        // URL configuration — local paths are static, online paths derived dynamically from r2_path_prefix
+        let MANIFEST_URL = isLocal ? 'photos_web/manifest.json' : '';
+        let IMAGE_BASE_URL = isLocal ? 'photos_web/' : '';
+        let EVENT_SETTINGS_URL = isLocal ? '/api/event-settings' : '';
+
+        // For online mode: fixed bootstrap URL at R2 root to discover r2_path_prefix
+        // This file is synced to R2 root by sync_to_r2.py and contains the r2_path_prefix field
+        const BOOTSTRAP_SETTINGS_URL = '/photo/event_settings.json';
 
         let allPhotos = []; // Store full list for navigation
         let currentPhotoIndex = 0;
         let isLightboxOpen = false;
 
-        // Load event settings
+        // Apply event settings to DOM elements
+        function applyEventSettings(settings) {
+            const titleEl = document.getElementById('event-title');
+            const subtitleEl = document.getElementById('event-subtitle');
+
+            titleEl.textContent = settings.event_title || 'LIVE EVENT 2026';
+            subtitleEl.textContent = settings.event_subtitle || '即時活動花絮・精彩瞬間';
+
+            if (settings.title_font_family) titleEl.style.fontFamily = settings.title_font_family;
+            if (settings.title_font_size) titleEl.style.fontSize = `${settings.title_font_size}px`;
+            if (settings.subtitle_font_family) subtitleEl.style.fontFamily = settings.subtitle_font_family;
+            if (settings.subtitle_font_size) subtitleEl.style.fontSize = `${settings.subtitle_font_size}px`;
+
+            const heroSection = document.getElementById('hero-section');
+            const imageUrl = settings.hero_image_uploaded || settings.hero_image_url;
+            if (imageUrl) {
+                heroSection.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.8)), url('${imageUrl}')`;
+            }
+        }
+
+        // Load event settings (periodic refresh)
         async function loadEventSettings() {
+            if (!EVENT_SETTINGS_URL) return; // Not yet bootstrapped (online mode)
             try {
                 const response = await fetch(`${EVENT_SETTINGS_URL}?t=${new Date().getTime()}`);
                 if (response.ok) {
-                    const settings = await response.json();
-                    const titleEl = document.getElementById('event-title');
-                    const subtitleEl = document.getElementById('event-subtitle');
-
-                    titleEl.textContent = settings.event_title || 'LIVE EVENT 2026';
-                    subtitleEl.textContent = settings.event_subtitle || '即時活動花絮・精彩瞬間';
-
-                    // Apply font settings
-                    if (settings.title_font_family) {
-                        titleEl.style.fontFamily = settings.title_font_family;
-                    }
-                    if (settings.title_font_size) {
-                        titleEl.style.fontSize = `${settings.title_font_size}px`;
-                    }
-                    if (settings.subtitle_font_family) {
-                        subtitleEl.style.fontFamily = settings.subtitle_font_family;
-                    }
-                    if (settings.subtitle_font_size) {
-                        subtitleEl.style.fontSize = `${settings.subtitle_font_size}px`;
-                    }
-
-                    // Update hero background image (prefer uploaded, fallback to URL)
-                    const heroSection = document.getElementById('hero-section');
-                    const imageUrl = settings.hero_image_uploaded || settings.hero_image_url;
-                    if (imageUrl) {
-                        heroSection.style.backgroundImage = `linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.8)), url('${imageUrl}')`;
-                    }
+                    applyEventSettings(await response.json());
                 }
             } catch (e) {
                 console.error('Failed to load event settings:', e);
             }
         }
 
-        // Load event settings on page load
-        loadEventSettings();
-        // Reload event settings every 30 seconds
-        setInterval(loadEventSettings, 30000);
-
         async function fetchPhotos() {
+            if (!MANIFEST_URL) return; // Not yet bootstrapped (online mode)
             try {
                 // Add timestamp to prevent caching
                 const response = await fetch(`${MANIFEST_URL}?t=${new Date().getTime()}`);
@@ -757,11 +754,43 @@
             if (touchEndX - touchStartX > 50) inputNav(-1); // Right Swipe (Prev)
         }, { passive: true });
 
-        // Poll every 3 seconds
-        setInterval(fetchPhotos, 3000);
+        // Bootstrap: discover r2_path_prefix and initialize the app
+        async function initApp() {
+            if (!isLocal) {
+                // Online mode: fetch settings from fixed R2 root path to discover r2_path_prefix
+                try {
+                    const res = await fetch(`${BOOTSTRAP_SETTINGS_URL}?t=${Date.now()}`);
+                    if (res.ok) {
+                        const settings = await res.json();
+                        const prefix = settings.r2_path_prefix;
+                        if (prefix) {
+                            MANIFEST_URL = `/photo/${prefix}/manifest.json`;
+                            IMAGE_BASE_URL = `/photo/${prefix}/`;
+                            EVENT_SETTINGS_URL = `/photo/${prefix}/event_settings.json`;
+                        } else {
+                            console.warn('r2_path_prefix not found in bootstrap settings, gallery may not load');
+                        }
+                        // Apply settings immediately (avoids redundant second fetch)
+                        applyEventSettings(settings);
+                    }
+                } catch (e) {
+                    console.error('Bootstrap failed:', e);
+                }
+            } else {
+                // Local mode: URLs already configured, load settings from API
+                await loadEventSettings();
+            }
 
-        // Initial load
-        fetchPhotos();
+            // Start periodic settings refresh
+            setInterval(loadEventSettings, 30000);
+
+            // Start photo polling
+            fetchPhotos();
+            setInterval(fetchPhotos, 3000);
+        }
+
+        // Launch
+        initApp();
     </script>
 </body>
 

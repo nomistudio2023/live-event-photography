@@ -20,11 +20,13 @@ from datetime import datetime
 os.environ['COPYFILE_DISABLE'] = '1'
 
 # ============ 配置區 ============
-# 載入 config.json 以取得動態資料夾路徑
+# 載入 config.json 以取得動態資料夾路徑與 R2 設定
 def load_config():
-    """Load config from config.json, fallback to default"""
+    """Load config from config.json, fallback to defaults.
+    Returns (web_folder_path, r2_path_prefix)."""
     config_file = Path(__file__).parent / "config" / "config.json"
     default_web_folder = Path(__file__).parent / "photos_web"
+    default_r2_prefix = "2026-01-20"
     
     if config_file.exists():
         try:
@@ -36,24 +38,23 @@ def load_config():
                     web_folder = str(Path(__file__).parent / web_folder[2:])
                 elif not os.path.isabs(web_folder):
                     web_folder = str(Path(__file__).parent / web_folder)
-                return Path(web_folder)
+                r2_prefix = config.get("r2_path_prefix", default_r2_prefix)
+                return Path(web_folder), r2_prefix
         except Exception as e:
             print(f"⚠️  無法讀取 config.json: {e}")
     
-    return default_web_folder
+    return default_web_folder, default_r2_prefix
 
-# 本地照片資料夾（從 config.json 讀取）
-LOCAL_PHOTOS_DIR = load_config()
+# 從 config.json 讀取設定（single source of truth）
+LOCAL_PHOTOS_DIR, R2_PATH_PREFIX = load_config()
 print(f"📂 使用資料夾: {LOCAL_PHOTOS_DIR}")
+print(f"📂 R2 路徑前綴: {R2_PATH_PREFIX}")
 
 # rclone 遠端名稱 (從 rclone config 取得)
 RCLONE_REMOTE = "r2livegallery"
 
 # R2 bucket 名稱
 BUCKET_NAME = "nomilivegallery"
-
-# R2 中的路徑前綴 (用於組織不同活動)
-R2_PATH_PREFIX = "2026-01-20"
 
 # 支援的照片格式
 PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}
@@ -239,15 +240,36 @@ def sync_static_files():
     """同步靜態資源 (event_settings.json, assets/)"""
     project_root = Path(__file__).parent
     
-    # 1. Sync config/event_settings.json
+    # 1. Sync config/event_settings.json (with r2_path_prefix injected)
     settings_file = project_root / "config" / "event_settings.json"
     if settings_file.exists():
         try:
+            # Read settings and inject r2_path_prefix for online frontend discovery
+            with open(settings_file, "r", encoding="utf-8") as f:
+                settings = json.load(f)
+            settings["r2_path_prefix"] = R2_PATH_PREFIX
+            
+            # Write enriched settings to a temp file for syncing
+            import tempfile
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as tmp:
+                json.dump(settings, tmp, ensure_ascii=False, indent=2)
+                tmp_path = tmp.name
+            
             print(f"🔄 同步設定檔: {settings_file.name}")
+            # Sync to event prefix path (for backward compatibility)
             subprocess.run(
-                ["rclone", "copy", str(settings_file), f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/"],
+                ["rclone", "copyto", tmp_path, f"{RCLONE_REMOTE}:{BUCKET_NAME}/{R2_PATH_PREFIX}/event_settings.json"],
                 capture_output=True, timeout=30
             )
+            # Also sync to R2 root — allows online frontend to bootstrap
+            # from a fixed known path (/photo/event_settings.json)
+            subprocess.run(
+                ["rclone", "copyto", tmp_path, f"{RCLONE_REMOTE}:{BUCKET_NAME}/event_settings.json"],
+                capture_output=True, timeout=30
+            )
+            
+            # Cleanup temp file
+            os.unlink(tmp_path)
         except Exception as e:
             print(f"⚠️  同步設定檔失敗: {e}")
 

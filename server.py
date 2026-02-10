@@ -23,6 +23,7 @@ logger = logging.getLogger(__name__)
 
 # --- Configuration ---
 DEFAULT_CONFIG = {
+    "r2_path_prefix": "2026-01-20",       # R2 path prefix for organizing events
     "buffer_folder": "./photos_buffer",   # Camera Ingest (Raw-ish)
     "web_folder": "./photos_web",         # Live Public
     "trash_folder": "./photos_trash",     # Rejected
@@ -1017,12 +1018,15 @@ def save_event_settings(settings):
             json.dump(settings, f, ensure_ascii=False, indent=2)
         
         # 2. Mirror to web folder for public access (R2 sync)
+        # Inject r2_path_prefix so the online frontend can discover it
         if "web_folder" in CONFIG:
+            web_settings = dict(settings)
+            web_settings["r2_path_prefix"] = CONFIG.get("r2_path_prefix", "")
             web_settings_file = os.path.join(CONFIG["web_folder"], "event_settings.json")
             try:
                 os.makedirs(CONFIG["web_folder"], exist_ok=True)
                 with open(web_settings_file, "w", encoding="utf-8") as f:
-                    json.dump(settings, f, ensure_ascii=False, indent=2)
+                    json.dump(web_settings, f, ensure_ascii=False, indent=2)
             except Exception as e:
                 logger.warning(f"Failed to mirror settings to web folder: {e}")
 
@@ -1033,8 +1037,11 @@ def save_event_settings(settings):
 
 @app.get("/api/event-settings")
 async def get_event_settings():
-    """Get current event settings"""
-    return load_event_settings()
+    """Get current event settings (includes r2_path_prefix from config)"""
+    settings = load_event_settings()
+    # Always inject r2_path_prefix from CONFIG (single source of truth)
+    settings["r2_path_prefix"] = CONFIG.get("r2_path_prefix", "")
+    return settings
 
 @app.post("/api/event-settings")
 async def update_event_settings(req: EventSettingsRequest):
