@@ -72,6 +72,7 @@ docs/
 | 文件 | 說明 |
 |------|------|
 | [2026-02-11-what-is-constitution-aware-bug-fix-skill.md](./learning/2026-02-11-what-is-constitution-aware-bug-fix-skill.md) | 從 Bug 修復過程提煉 Agent Skill 的概念與實作 |
+| [2026-02-11-how-cursor-skill-triggers.md](./learning/2026-02-11-how-cursor-skill-triggers.md) | Cursor Agent Skill 觸發機制、運作流程與實際範例 |
 
 ---
 

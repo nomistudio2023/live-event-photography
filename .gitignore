@@ -23,5 +23,8 @@ photos_trash/
 # 排除舊版/封存的程式碼和文檔
 docs/archive/
 
+# 排除使用者學習紀錄（個人筆記，不上傳至 GitHub）
+docs/learning/
+
 # 排除第三方工具原始碼
 spec-kit/
