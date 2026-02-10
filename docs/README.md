@@ -60,6 +60,7 @@ docs/
 
 | 文件 | 說明 |
 |------|------|
+| [2026-02-11-spec-kit-and-docs-restructure.md](./dev/logs/2026-02-11-spec-kit-and-docs-restructure.md) | 文件重整、導入 Spec-Kit、P2 功能規格撰寫 |
 | [2026-02-06-update.md](./dev/logs/2026-02-06-update.md) | Hero Banner 同步優化與管理介面更新 |
 
 ---
