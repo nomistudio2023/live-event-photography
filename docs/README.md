@@ -1,128 +1,95 @@
-# Live Event Photography - Documentation
+# Live Event Photography — Documentation
 
-Welcome to the Live Event Photography documentation. This folder contains all project documentation organized for easy navigation.
+專案文件索引。所有文件依用途分類於子目錄中。
 
----
-
-## 📚 Documentation Structure
-
-### 🎯 Core Documentation
-Essential documents for understanding and using the system.
-
-- **[PROJECT_STATUS.md](./PROJECT_STATUS.md)** - Current project status, features, and health check
-- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - System architecture, data flow, and technical design
-- **[API_REFERENCE.md](./API_REFERENCE.md)** - Complete API endpoint documentation
-- **[USER_GUIDE.md](./USER_GUIDE.md)** - User operation manual and workflows
-
-### 📖 Development Documentation
-For developers and maintainers.
-
-- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
-- **[DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)** - Future development plans
-- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Common issues and solutions
-
-### 🚀 Setup Guides
-Step-by-step setup instructions.
-
-- **[SETUP_GUIDE.md](./SETUP_GUIDE.md)** - Initial setup instructions
-- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Cloudflare deployment guide
-- **[R2_SETUP_GUIDE.md](./R2_SETUP_GUIDE.md)** - R2 storage configuration
+**最後更新**: 2026-02-11
 
 ---
 
-## 🔍 Quick Navigation
+## 目錄結構
 
-### I want to...
-
-**...understand the project**
-→ Start with [PROJECT_STATUS.md](./PROJECT_STATUS.md)
-
-**...set up the system**
-→ Follow [SETUP_GUIDE.md](./SETUP_GUIDE.md)
-
-**...use the system**
-→ Read [USER_GUIDE.md](./USER_GUIDE.md)
-
-**...develop/extend features**
-→ Check [ARCHITECTURE.md](./ARCHITECTURE.md) and [API_REFERENCE.md](./API_REFERENCE.md)
-
-**...fix an issue**
-→ Consult [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-
-**...deploy to production**
-→ Follow [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)
-
-**...see what's planned**
-→ Review [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md)
+```
+docs/
+├── guides/           使用者操作指南
+├── reference/        技術參考文件
+├── dev/              開發者文件
+│   ├── plans/        開發計劃（帶日期）
+│   └── logs/         開發日誌（帶日期）
+└── archive/          歷史紀錄
+```
 
 ---
 
-## 📋 Document Naming Convention
+## 📖 Guides — 操作指南
 
-All documentation follows a consistent naming pattern:
-
-- **UPPERCASE_WITH_UNDERSCORES.md** - Main documentation files
-- **lowercase-with-dashes.md** - Supporting/reference files
-- **Date prefix (YYYYMMDD_)** - Historical/archived documents
-
----
-
-## 🗂️ Archived Documentation
-
-Historical progress reports and status updates have been consolidated into the core documentation. Original files are preserved in the project root for reference:
-
-### Consolidated into CHANGELOG.md
-- `COMPLETED_TASKS_20260123.md`
-- `FEATURES_IMPLEMENTED_20260123.md`
-- `BUGFIXES_20260123.md`
-- `IMPROVEMENTS_20260123.md`
-- `SUCCESS_REPORT_20260123.md`
-
-### Consolidated into PROJECT_STATUS.md
-- `CURRENT_STATUS_20260123.md`
-- `FINAL_STATUS_20260123.md`
-- `project_status_20260122.md`
-- `project_status_20260121.md`
-- `project_status_20260120.md`
-- `project_status_20260118.md`
-
-### Consolidated into ARCHITECTURE.md
-- `20260123_PROJECT_COMPACT.md`
-- `20260123- Live Event Photography - 開發進度 Compact-Perplexity.md`
-
-### Consolidated into TROUBLESHOOTING.md
-- `HIDDEN_FILES_FIX_FINAL.md`
-- `R2_MANIFEST_FIX.md`
-- `MACOS_HIDDEN_FILES_SOLUTION.md`
-- `CLEANUP_USAGE.md`
-- `PATH_VERIFICATION.md`
-- `RESTART_INSTRUCTIONS.md`
+| 文件 | 說明 |
+|------|------|
+| [getting-started.md](./guides/getting-started.md) | 快速入門（5 分鐘開始使用） |
+| [operation-manual.md](./guides/operation-manual.md) | 完整操作手冊（活動前/中/後流程） |
+| [deployment.md](./guides/deployment.md) | Cloudflare Pages 部署指南 |
+| [r2-setup.md](./guides/r2-setup.md) | R2 儲存桶設定 |
+| [html-settings.md](./guides/html-settings.md) | 手動修改活動頁面 HTML |
+| [cleanup-usage.md](./guides/cleanup-usage.md) | 隱藏檔清理工具使用說明 |
+| [troubleshooting.md](./guides/troubleshooting.md) | 常見問題與解法 |
 
 ---
 
-## 🌐 Language
+## 📐 Reference — 技術參考
 
-Documentation is primarily in **English** with key sections in **正體中文** where appropriate for the target audience.
-
----
-
-## 📝 Contributing to Documentation
-
-When adding or updating documentation:
-
-1. **Follow the naming convention** - Use UPPERCASE_WITH_UNDERSCORES for main docs
-2. **Update this README** - Add new documents to the appropriate section
-3. **Cross-reference** - Link related documents
-4. **Keep it current** - Update the "Last Updated" date
-5. **Be clear** - Write for both technical and non-technical audiences
+| 文件 | 說明 |
+|------|------|
+| [architecture.md](./reference/architecture.md) | 系統架構、資料流、技術設計 |
+| [project-status.md](./reference/project-status.md) | 專案狀態、功能清單、API 端點 |
 
 ---
 
-## 🔄 Documentation Maintenance
+## 🛠️ Dev — 開發者文件
 
-**Last Documentation Review**: 2026-02-01  
-**Next Scheduled Review**: When major features are added
+| 文件 | 說明 |
+|------|------|
+| [changelog.md](./dev/changelog.md) | 版本歷史與變更紀錄 |
+| [roadmap.md](./dev/roadmap.md) | 後續開發路線圖 |
+
+### Plans — 開發計劃
+
+| 文件 | 說明 |
+|------|------|
+| [2026-02-11-development-plan.md](./dev/plans/2026-02-11-development-plan.md) | 功能缺口分析與 4 週開發規劃 |
+
+### Logs — 開發日誌
+
+| 文件 | 說明 |
+|------|------|
+| [2026-02-06-update.md](./dev/logs/2026-02-06-update.md) | Hero Banner 同步優化與管理介面更新 |
 
 ---
 
-**Questions or suggestions?** Open an issue or contact the development team.
+## 🗂️ Archive — 歷史紀錄
+
+已解決問題的筆記與舊版狀態報告，保留作為參考。
+
+詳見 [archive/](./archive/) 目錄。
+
+---
+
+## 命名規範
+
+本專案文件一律遵循以下規則：
+
+| 規則 | 範例 |
+|------|------|
+| 檔名使用 `kebab-case.md` | `getting-started.md` |
+| 帶日期的檔案以 `YYYY-MM-DD-` 為前綴 | `2026-02-11-development-plan.md` |
+| 目錄名使用小寫 | `guides/`, `dev/plans/` |
+
+### 新增文件時
+
+1. 選擇正確的子目錄分類
+2. 使用 `kebab-case.md` 命名
+3. 如果是有時間性的文件（計劃、日誌），加上日期前綴
+4. 更新本 README 的對應表格
+5. 在文件頂部標註建立日期
+
+---
+
+**問題或建議？** 請開 Issue 或聯繫開發團隊。

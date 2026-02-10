@@ -165,4 +165,4 @@ All notable changes to the Live Event Photography project are documented here.
 
 ## Upcoming Changes
 
-See [DEVELOPMENT_ROADMAP.md](./DEVELOPMENT_ROADMAP.md) for planned features and improvements.
+See [roadmap.md](./roadmap.md) for planned features and improvements.

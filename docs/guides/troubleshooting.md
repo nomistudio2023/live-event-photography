@@ -614,4 +614,4 @@ When reporting an issue, include:
 
 ---
 
-**Still stuck? Check [ARCHITECTURE.md](./ARCHITECTURE.md) for system design details.**
+**Still stuck? Check [architecture.md](../reference/architecture.md) for system design details.**

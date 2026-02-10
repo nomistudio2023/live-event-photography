@@ -415,5 +415,4 @@ export COPYFILE_DISABLE=1  # Prevent macOS resource forks
 
 ---
 
-**For implementation details, see [API_REFERENCE.md](./API_REFERENCE.md)**  
-**For usage instructions, see [USER_GUIDE.md](./USER_GUIDE.md)**
+**For usage instructions, see [operation-manual.md](../guides/operation-manual.md)**

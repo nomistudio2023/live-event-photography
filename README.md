@@ -140,7 +140,7 @@ live-event-photography/
 - 自動同步：`sync_to_r2.py` 會自動每 3 秒同步照片，並每 30 秒同步一次設定檔 (`event_settings.json`) 至 R2。
 - 代理讀取：線上頁面透過 `functions/photo/[[path]].js` 讀取 R2 中的靜態資源。
 
-詳見 [docs/R2_SETUP_GUIDE.md](docs/R2_SETUP_GUIDE.md)
+詳見 [docs/guides/r2-setup.md](docs/guides/r2-setup.md)
 
 ---
 
@@ -158,17 +158,17 @@ live-event-photography/
 
 ## 📖 更多文檔
 
-- [系統架構](docs/ARCHITECTURE.md)
-- [疑難排解](docs/TROUBLESHOOTING.md)
-- [操作手冊](docs/OPERATION_MANUAL.md)
-- [部署指南](docs/DEPLOYMENT_GUIDE.md)
+- [系統架構](docs/reference/architecture.md)
+- [疑難排解](docs/guides/troubleshooting.md)
+- [操作手冊](docs/guides/operation-manual.md)
+- [部署指南](docs/guides/deployment.md)
 
 ---
 
 ## 📜 版本歷史
 
-詳見 [docs/CHANGELOG.md](docs/CHANGELOG.md)
+詳見 [docs/dev/changelog.md](docs/dev/changelog.md)
 
 ---
 
-**最後更新**: 2026-02-06
+**最後更新**: 2026-02-11

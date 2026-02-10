@@ -171,23 +171,22 @@ live-event-photography/
 
 ## 📚 Documentation Index
 
-All documentation is now organized in the `docs/` folder:
+All documentation is organized in the `docs/` folder by category:
 
-### Core Documentation
-- **PROJECT_STATUS.md** (this file) - Current project status
-- **ARCHITECTURE.md** - System architecture and data flow
-- **API_REFERENCE.md** - Complete API documentation
-- **USER_GUIDE.md** - User operation manual
+### Reference
+- **[project-status.md](./project-status.md)** (this file) - Current project status
+- **[architecture.md](./architecture.md)** - System architecture and data flow
 
-### Development Documentation
-- **CHANGELOG.md** - Version history and changes
-- **DEVELOPMENT_ROADMAP.md** - Future development plans
-- **TROUBLESHOOTING.md** - Common issues and solutions
+### Guides
+- **[getting-started.md](../guides/getting-started.md)** - Quick start guide
+- **[operation-manual.md](../guides/operation-manual.md)** - User operation manual
+- **[deployment.md](../guides/deployment.md)** - Cloudflare deployment guide
+- **[r2-setup.md](../guides/r2-setup.md)** - R2 configuration guide
+- **[troubleshooting.md](../guides/troubleshooting.md)** - Common issues and solutions
 
-### Setup Guides
-- **SETUP_GUIDE.md** - Initial setup instructions
-- **DEPLOYMENT_GUIDE.md** - Cloudflare deployment guide
-- **R2_SETUP_GUIDE.md** - R2 configuration guide
+### Development
+- **[changelog.md](../dev/changelog.md)** - Version history and changes
+- **[roadmap.md](../dev/roadmap.md)** - Future development plans
 
 ---
 
